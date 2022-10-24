@@ -55,6 +55,57 @@ func (ns NullMessageType) Value() (driver.Value, error) {
 	return ns.MessageType, nil
 }
 
+type Payment string
+
+const (
+	PaymentPrepaid  Payment = "Prepaid"
+	PaymentPostpaid Payment = "Postpaid"
+)
+
+func (e *Payment) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Payment(s)
+	case string:
+		*e = Payment(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Payment: %T", src)
+	}
+	return nil
+}
+
+type NullPayment struct {
+	Payment Payment
+	Valid   bool // Valid is true if String is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPayment) Scan(value interface{}) error {
+	if value == nil {
+		ns.Payment, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Payment.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPayment) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return ns.Payment, nil
+}
+
+type Balance struct {
+	ID        uuid.UUID       `json:"id"`
+	ClientID  string          `json:"client_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	Status    string          `json:"status"`
+	CreatedAt *time.Time      `json:"created_at"`
+	UpdatedAt *time.Time      `json:"updated_at"`
+}
+
 type Client struct {
 	ID        uuid.UUID  `json:"id"`
 	Title     string     `json:"title"`
@@ -64,6 +115,20 @@ type Client struct {
 	Status    string     `json:"status"`
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+type Invoice struct {
+	ID            uuid.UUID       `json:"id"`
+	InvoiceNumber int64           `json:"invoice_number"`
+	ClientID      string          `json:"client_id"`
+	Payment       Payment         `json:"payment"`
+	Amount        decimal.Decimal `json:"amount"`
+	TotalMonthly  decimal.Decimal `json:"total_monthly"`
+	Discount      decimal.Decimal `json:"discount"`
+	Tax           decimal.Decimal `json:"tax"`
+	TaxRate       decimal.Decimal `json:"tax_rate"`
+	CreatedAt     *time.Time      `json:"created_at"`
+	UpdatedAt     *time.Time      `json:"updated_at"`
 }
 
 type Message struct {
@@ -77,6 +142,14 @@ type Message struct {
 	DeliveryStatus string          `json:"delivery_status"`
 	MessageID      string          `json:"message_id"`
 	CreatedAt      *time.Time      `json:"created_at"`
+}
+
+type SystemConfig struct {
+	ID           uuid.UUID  `json:"id"`
+	SettingName  string     `json:"setting_name"`
+	SettingValue string     `json:"setting_value"`
+	CreatedAt    *time.Time `json:"created_at"`
+	UpdatedAt    *time.Time `json:"updated_at"`
 }
 
 type Template struct {
