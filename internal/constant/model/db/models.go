@@ -5,9 +5,55 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"time"
 )
+
+type MessageType string
+
+const (
+	MessageTypeIncoming MessageType = "Incoming"
+	MessageTypeOutGoing MessageType = "OutGoing"
+)
+
+func (e *MessageType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MessageType(s)
+	case string:
+		*e = MessageType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MessageType: %T", src)
+	}
+	return nil
+}
+
+type NullMessageType struct {
+	MessageType MessageType
+	Valid       bool // Valid is true if String is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMessageType) Scan(value interface{}) error {
+	if value == nil {
+		ns.MessageType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MessageType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMessageType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return ns.MessageType, nil
+}
 
 type Client struct {
 	ID        uuid.UUID  `json:"id"`
@@ -18,6 +64,29 @@ type Client struct {
 	Status    string     `json:"status"`
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+type Message struct {
+	ID             uuid.UUID       `json:"id"`
+	SenderPhone    string          `json:"sender_phone"`
+	Content        string          `json:"content"`
+	Price          decimal.Decimal `json:"price"`
+	ReceiverPhone  string          `json:"receiver_phone"`
+	Type           MessageType     `json:"type"`
+	Status         string          `json:"status"`
+	DeliveryStatus string          `json:"delivery_status"`
+	MessageID      string          `json:"message_id"`
+	CreatedAt      *time.Time      `json:"created_at"`
+}
+
+type Template struct {
+	ID         uuid.UUID  `json:"id"`
+	TemplateID string     `json:"template_id"`
+	Client     string     `json:"client"`
+	Template   string     `json:"template"`
+	Category   string     `json:"category"`
+	CreatedAt  *time.Time `json:"created_at"`
+	UpdatedAt  *time.Time `json:"updated_at"`
 }
 
 type User struct {

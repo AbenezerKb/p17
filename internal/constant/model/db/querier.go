@@ -10,12 +10,21 @@ import (
 
 type Querier interface {
 	AddClient(ctx context.Context, arg AddClientParams) (Client, error)
+	AddMessage(ctx context.Context, arg AddMessageParams) (Message, error)
+	AddTemplate(ctx context.Context, arg AddTemplateParams) (Template, error)
 	AddUser(ctx context.Context, arg AddUserParams) (User, error)
 	GetClient(ctx context.Context, phone string) (Client, error)
+	GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPrefixParams) ([]Message, error)
+	GetMessagesBySender(ctx context.Context, arg GetMessagesBySenderParams) ([]Message, error)
 	GetUser(ctx context.Context, phone string) (User, error)
 	ListAllClients(ctx context.Context, arg ListAllClientsParams) ([]Client, error)
+	ListAllMessages(ctx context.Context, arg ListAllMessagesParams) ([]Message, error)
+	ListAllTemplates(ctx context.Context, arg ListAllTemplatesParams) ([]Template, error)
+	ListClientTemplates(ctx context.Context, arg ListClientTemplatesParams) ([]Template, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	UpdateClient(ctx context.Context, arg UpdateClientParams) (Client, error)
+	UpdateDeliveryStatus(ctx context.Context, arg UpdateDeliveryStatusParams) error
+	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) (Template, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 
