@@ -1,5 +1,5 @@
 .idea
 .vscode
-config
+config/rbac_with_domain_model.conf
 docs
 .env
