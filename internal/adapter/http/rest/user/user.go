@@ -4,11 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"github.com/joomcode/errorx"
 	"golang.org/x/net/context"
 	"net/http"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest"
+	"sms-gateway/internal/constant/rest/error_types"
 	userModule "sms-gateway/internal/module/user"
 	"time"
 )
@@ -38,6 +40,7 @@ func (u userHandler) AddUser(c *gin.Context) {
 	user := &dto.User{}
 	err := c.ShouldBind(user)
 	if err != nil {
+		_ = c.Error(errorx.IllegalArgument.New(error_types.ErrorInvalidRequestBody))
 		return
 	}
 
@@ -76,7 +79,7 @@ func (u userHandler) UpdateUser(c *gin.Context) {
 	user := &dto.User{}
 	err := c.ShouldBind(user)
 	if err != nil {
-
+		_ = c.Error(errorx.IllegalArgument.New(error_types.ErrorInvalidRequestBody))
 		return
 	}
 

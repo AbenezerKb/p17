@@ -7,6 +7,7 @@ import (
 	"sms-gateway/internal/constant/model/db"
 	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest"
+	"sms-gateway/internal/constant/rest/error_types"
 	"strconv"
 )
 
@@ -37,7 +38,7 @@ func (u userStorge) AddUser(ctx context.Context, user *dto.User) (*dto.User, err
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, error_types.GetDbError(err)
 	}
 
 	newUser := dto.User{
@@ -53,7 +54,7 @@ func (u userStorge) UpdateUser(ctx context.Context, user *dto.User) (*dto.User, 
 		FullName: user.FullName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, error_types.GetDbError(err)
 	}
 
 	newUser := dto.User{
@@ -68,7 +69,7 @@ func (u userStorge) UpdateUser(ctx context.Context, user *dto.User) (*dto.User, 
 func (u userStorge) GetUser(ctx context.Context, phone string) (*dto.User, error) {
 	us, err := u.dbp.GetUser(ctx, phone)
 	if err != nil {
-		return nil, err
+		return nil, error_types.GetDbError(err)
 	}
 
 	newUser := dto.User{
@@ -92,7 +93,7 @@ func (u userStorge) GetAllUsers(ctx context.Context, params *rest.QueryParams) (
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, error_types.GetDbError(err)
 	}
 
 	var tmp []dto.User
