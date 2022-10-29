@@ -3,6 +3,7 @@ package balance
 import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 	"golang.org/x/net/context"
 	"sms-gateway/internal/adapter/storage/persistance/balance"
 	const_init "sms-gateway/internal/constant/init"
@@ -22,7 +23,6 @@ type Module interface {
 	ListAllBalance(ctx context.Context, params *rest.QueryParams) ([]dto.Balance, error)
 	GetClientBalance(ctx context.Context, email string) (*dto.Balance, error)
 	UpdateClientBalance(ctx context.Context, balance *dto.Balance) (*dto.Balance, error)
-	Generate(ctx context.Context) error
 }
 
 func ModuleInit(balanceStorage balance.Storage, utils const_init.Utils) Module {
@@ -84,7 +84,7 @@ func (b balanceModule) GenerateInvoice(ctx context.Context) error {
 		lastMonthBlc, err := b.balanceStorage.GetLastMonthClientBalance(ctx, client.Id)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		currentBlc, err := b.balanceStorage.GetCurrentClientBalance(ctx, client.Id)
@@ -109,8 +109,8 @@ func (b balanceModule) GenerateInvoice(ctx context.Context) error {
 			MessageCount:            msgCount,
 			ClientTransactions:      txn,
 			//TODO get the tax rate from config
-			Tax:     0,
-			TaxRate: 0,
+			Tax:     decimal.NewFromInt(0),
+			TaxRate: decimal.NewFromInt(0),
 		}
 		clientInvoices = append(clientInvoices, clientInvoice)
 	}

@@ -12,9 +12,8 @@ CREATE TABLE invoice (
                          "payment_type" payment_type NOT NULL,
                          "current_balance" DECIMAL NOT NULL,
                          "balance_at_beginning" DECIMAL NOT NULL,
-                         "discount" DECIMAL NOT NULL,
-                         "message_count" jsonb NOT NULL ,
-                         "client_transaction" jsonb NOT NULL ,
+                         "message_count" json NOT NULL ,
+                         "client_transaction" json NOT NULL ,
                          "tax" DECIMAL NOT NULL,
                          "tax_rate" DECIMAL NOT NULL,
                          "created_at" timestamp default now()

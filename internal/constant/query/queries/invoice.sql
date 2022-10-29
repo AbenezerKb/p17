@@ -1,7 +1,7 @@
 -- name: AddInvoice :one
 INSERT INTO invoice
-(invoice_number,client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, discount, tax, tax_rate)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+(invoice_number,client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type Invoice struct {
+type ClientInvoice struct {
 	Id                 string               `json:"id"`
 	InvoiceNumber      string               `json:"invoice_number"`
 	ClientId           string               `json:"client_id"`
@@ -21,3 +21,19 @@ type Invoice struct {
 	TaxRate            decimal.Decimal      `json:"tax_rate"`
 	CreatedAt          *time.Time           `json:"created_at"`
 }
+
+//
+//type ClientInvoice struct {
+//	Id                      string          `json:"id"`
+//	InvoiceNumber           string          `json:"invoice_number"`
+//	PaymentType             db.PaymentType  `json:"payment_type"`
+//	ClientEmail             string          `json:"client_email"`
+//	BalanceAtMonthBeginning decimal.Decimal `json:"balance_at_month_beginning"`
+//	CurrentBalance          decimal.Decimal `json:"current_balance"`
+//	//Discount                []decimal.Decimal   `json:"discount"`
+//	MessageCount       []MessageCount          `json:"message_count"`
+//	ClientTransactions []dto.ClientTransaction `json:"client_transaction"`
+//	Tax                decimal.Decimal         `json:"tax"`
+//	TaxRate            decimal.Decimal         `json:"tax_rate"`
+//	CreatedAt          *time.Time              `json:"created_at"`
+//}

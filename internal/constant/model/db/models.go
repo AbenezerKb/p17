@@ -175,9 +175,8 @@ type Invoice struct {
 	PaymentType        PaymentType     `json:"payment_type"`
 	CurrentBalance     decimal.Decimal `json:"current_balance"`
 	BalanceAtBeginning decimal.Decimal `json:"balance_at_beginning"`
-	Discount           decimal.Decimal `json:"discount"`
-	MessageCount       pgtype.JSONB    `json:"message_count"`
-	ClientTransaction  pgtype.JSONB    `json:"client_transaction"`
+	MessageCount       pgtype.JSON     `json:"message_count"`
+	ClientTransaction  pgtype.JSON     `json:"client_transaction"`
 	Tax                decimal.Decimal `json:"tax"`
 	TaxRate            decimal.Decimal `json:"tax_rate"`
 	CreatedAt          *time.Time      `json:"created_at"`

@@ -16,9 +16,9 @@ import (
 
 const addInvoice = `-- name: AddInvoice :one
 INSERT INTO invoice
-(invoice_number,client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, discount, tax, tax_rate)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at
+(invoice_number,client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at
 `
 
 type AddInvoiceParams struct {
@@ -27,9 +27,8 @@ type AddInvoiceParams struct {
 	PaymentType        PaymentType     `json:"payment_type"`
 	CurrentBalance     decimal.Decimal `json:"current_balance"`
 	BalanceAtBeginning decimal.Decimal `json:"balance_at_beginning"`
-	MessageCount       pgtype.JSONB    `json:"message_count"`
-	ClientTransaction  pgtype.JSONB    `json:"client_transaction"`
-	Discount           decimal.Decimal `json:"discount"`
+	MessageCount       pgtype.JSON     `json:"message_count"`
+	ClientTransaction  pgtype.JSON     `json:"client_transaction"`
 	Tax                decimal.Decimal `json:"tax"`
 	TaxRate            decimal.Decimal `json:"tax_rate"`
 }
@@ -43,7 +42,6 @@ func (q *Queries) AddInvoice(ctx context.Context, arg AddInvoiceParams) (Invoice
 		arg.BalanceAtBeginning,
 		arg.MessageCount,
 		arg.ClientTransaction,
-		arg.Discount,
 		arg.Tax,
 		arg.TaxRate,
 	)
@@ -55,7 +53,6 @@ func (q *Queries) AddInvoice(ctx context.Context, arg AddInvoiceParams) (Invoice
 		&i.PaymentType,
 		&i.CurrentBalance,
 		&i.BalanceAtBeginning,
-		&i.Discount,
 		&i.MessageCount,
 		&i.ClientTransaction,
 		&i.Tax,
@@ -66,7 +63,7 @@ func (q *Queries) AddInvoice(ctx context.Context, arg AddInvoiceParams) (Invoice
 }
 
 const getInvoice = `-- name: GetInvoice :one
-SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
 WHERE invoice_number=$1
 `
 
@@ -80,7 +77,6 @@ func (q *Queries) GetInvoice(ctx context.Context, invoiceNumber uuid.NullUUID) (
 		&i.PaymentType,
 		&i.CurrentBalance,
 		&i.BalanceAtBeginning,
-		&i.Discount,
 		&i.MessageCount,
 		&i.ClientTransaction,
 		&i.Tax,
@@ -91,7 +87,7 @@ func (q *Queries) GetInvoice(ctx context.Context, invoiceNumber uuid.NullUUID) (
 }
 
 const getInvoiceByMonth = `-- name: GetInvoiceByMonth :one
-SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
 WHERE client_id=$1
 AND created_at=$2
 `
@@ -111,7 +107,6 @@ func (q *Queries) GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthPa
 		&i.PaymentType,
 		&i.CurrentBalance,
 		&i.BalanceAtBeginning,
-		&i.Discount,
 		&i.MessageCount,
 		&i.ClientTransaction,
 		&i.Tax,
@@ -122,7 +117,7 @@ func (q *Queries) GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthPa
 }
 
 const listClientInvoices = `-- name: ListClientInvoices :many
-SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
 WHERE client_id=$1
 LIMIT $2
 OFFSET $3
@@ -150,7 +145,6 @@ func (q *Queries) ListClientInvoices(ctx context.Context, arg ListClientInvoices
 			&i.PaymentType,
 			&i.CurrentBalance,
 			&i.BalanceAtBeginning,
-			&i.Discount,
 			&i.MessageCount,
 			&i.ClientTransaction,
 			&i.Tax,
