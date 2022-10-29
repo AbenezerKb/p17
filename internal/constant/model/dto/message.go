@@ -9,6 +9,7 @@ import (
 
 type Message struct {
 	Id            string          `json:"id"`
+	ClientId      string          `json:"client_id"`
 	ReceiverPhone string          `json:"receiver_phone"`
 	SenderPhone   string          `json:"sender_phone"`
 	Content       string          `json:"content"`

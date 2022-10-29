@@ -131,7 +131,7 @@ type ListAllTemplatesParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *templateStorage) ListAllTemplates(ctx context.Context, arg ListAllTemplatesParams) ([]dto.Template, error) {
+func (q templateStorage) ListAllTemplates(ctx context.Context, arg ListAllTemplatesParams) ([]dto.Template, error) {
 	rows, err := q.db.Query(ctx, listAllTemplates, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err

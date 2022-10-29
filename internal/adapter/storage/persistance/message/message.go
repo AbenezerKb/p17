@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/shopspring/decimal"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/model"
 	"sms-gateway/internal/constant/model/db"
@@ -22,6 +23,7 @@ type MessageStorage interface {
 	BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error)
 	ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 	GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
+	LastMonthMessagesPriceAndCount(ctx context.Context, clientId string) ([]model.MessageCount, error)
 }
 
 func MessageStorageInit(utils const_init.Utils) MessageStorage {
@@ -126,4 +128,38 @@ func (m messageStorage) GetMessagesBySender(ctx context.Context, params *rest.Qu
 func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error) {
 
 	return nil, nil
+}
+
+const lastMonthMessagesPriceAndCount = `-- name: LastMonthMessagesPriceAndCount :many
+SELECT  price, COUNT(id) as COUNT,
+        SUM (price) AS sum
+FROM public.messages
+WHERE sender_phone=$1 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
+GROUP BY  price
+`
+
+type LastMonthMessagesPriceAndCountRow struct {
+	Price decimal.Decimal `json:"price"`
+	Count int64           `json:"count"`
+	Sum   int64           `json:"sum"`
+}
+
+func (q messageStorage) LastMonthMessagesPriceAndCount(ctx context.Context, senderPhone string) ([]model.MessageCount, error) {
+	rows, err := q.db.Query(ctx, lastMonthMessagesPriceAndCount, senderPhone)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []model.MessageCount{}
+	for rows.Next() {
+		var i model.MessageCount
+		if err := rows.Scan(&i.Price, &i.Count, &i.Sum); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

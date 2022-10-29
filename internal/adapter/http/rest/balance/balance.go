@@ -25,10 +25,11 @@ type balanceHandler struct {
 }
 
 type Handler interface {
-	SendSMS(c *gin.Context)
-	SendBatchSMS(c *gin.Context)
-	ReceiveSMS(c *gin.Context)
-	GetAllClientMessages(c *gin.Context)
+	AddBalance(c *gin.Context)
+	ListAllBalance(c *gin.Context)
+	GetClientBalance(c *gin.Context)
+	UpdateClientBalance(c *gin.Context)
+	GetClientInvoice(c *gin.Context)
 }
 
 var messageSuccessReplay = "Message Sent Successfully"
@@ -41,18 +42,18 @@ func HandlerInit(messageModules messageModule.MessageModule, utils const_init.Ut
 	}
 }
 
-func (m balanceHandler) SendSMS(c *gin.Context) {
+func (m balanceHandler) AddBalance(c *gin.Context) {
 
 	clientId := c.Param("id")
 	value, _ := c.Get("userID")
 	if clientId != value {
 		err := errors.ErrInvalidToken.New(errors.ErrorUnauthorizedError)
 		_ = c.Error(err)
-
+		c.Abort()
 		return
 	}
-	message := &model.OutGoingSMS{}
-	err := c.ShouldBind(message)
+	balance := &dto.Balance{}
+	err := c.ShouldBind(balance)
 	if err != nil {
 		_ = c.Error(errorx.IllegalArgument.New(error_types.ErrorInvalidRequestBody))
 		return

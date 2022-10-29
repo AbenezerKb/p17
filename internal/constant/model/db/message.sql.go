@@ -12,10 +12,10 @@ import (
 )
 
 const addMessage = `-- name: AddMessage :one
-INSERT INTO messages
+INSERT INTO public.messages
     (sender_phone, content, price, receiver_phone, type,status)
     VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at
+RETURNING id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at
 `
 
 type AddMessageParams struct {
@@ -39,6 +39,7 @@ func (q *Queries) AddMessage(ctx context.Context, arg AddMessageParams) (Message
 	var i Message
 	err := row.Scan(
 		&i.ID,
+		&i.ClientID,
 		&i.SenderPhone,
 		&i.Content,
 		&i.Price,
@@ -53,7 +54,7 @@ func (q *Queries) AddMessage(ctx context.Context, arg AddMessageParams) (Message
 }
 
 const getMessageWithPrefix = `-- name: GetMessageWithPrefix :many
-SELECT id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
     WHERE content LIKE $2 AND receiver_phone=$1
     LIMIT $3
     OFFSET $4
@@ -82,6 +83,7 @@ func (q *Queries) GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPr
 		var i Message
 		if err := rows.Scan(
 			&i.ID,
+			&i.ClientID,
 			&i.SenderPhone,
 			&i.Content,
 			&i.Price,
@@ -103,7 +105,7 @@ func (q *Queries) GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPr
 }
 
 const getMessagesBySender = `-- name: GetMessagesBySender :many
-SELECT id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
 WHERE sender_phone=$1
 LIMIT $2
     OFFSET $3
@@ -126,6 +128,7 @@ func (q *Queries) GetMessagesBySender(ctx context.Context, arg GetMessagesBySend
 		var i Message
 		if err := rows.Scan(
 			&i.ID,
+			&i.ClientID,
 			&i.SenderPhone,
 			&i.Content,
 			&i.Price,
@@ -146,8 +149,42 @@ func (q *Queries) GetMessagesBySender(ctx context.Context, arg GetMessagesBySend
 	return items, nil
 }
 
+const lastMonthMessagePriceAndCount = `-- name: LastMonthMessagePriceAndCount :many
+SELECT  price, COUNT(id) as COUNT,
+        SUM (price) AS sum
+FROM public.messages
+WHERE client_id=$1 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
+GROUP BY  price
+`
+
+type LastMonthMessagePriceAndCountRow struct {
+	Price decimal.Decimal `json:"price"`
+	Count int64           `json:"count"`
+	Sum   int64           `json:"sum"`
+}
+
+func (q *Queries) LastMonthMessagePriceAndCount(ctx context.Context, clientID string) ([]LastMonthMessagePriceAndCountRow, error) {
+	rows, err := q.db.Query(ctx, lastMonthMessagePriceAndCount, clientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LastMonthMessagePriceAndCountRow{}
+	for rows.Next() {
+		var i LastMonthMessagePriceAndCountRow
+		if err := rows.Scan(&i.Price, &i.Count, &i.Sum); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllMessages = `-- name: ListAllMessages :many
-SELECT id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
         LIMIT $1
 OFFSET $2
 `
@@ -168,6 +205,7 @@ func (q *Queries) ListAllMessages(ctx context.Context, arg ListAllMessagesParams
 		var i Message
 		if err := rows.Scan(
 			&i.ID,
+			&i.ClientID,
 			&i.SenderPhone,
 			&i.Content,
 			&i.Price,
@@ -189,7 +227,7 @@ func (q *Queries) ListAllMessages(ctx context.Context, arg ListAllMessagesParams
 }
 
 const updateDeliveryStatus = `-- name: UpdateDeliveryStatus :exec
-UPDATE messages
+UPDATE public.messages
 SET delivery_status = $2
 WHERE message_id = $1
 `

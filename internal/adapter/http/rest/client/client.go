@@ -3,12 +3,12 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/dongri/phonenumber"
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	"github.com/joomcode/errorx"
 	"net/http"
+	"net/mail"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/model"
 	"sms-gateway/internal/constant/model/dto"
@@ -150,14 +150,12 @@ func (cl clientHandler) ClientLogin(c *gin.Context) {
 		_ = c.Error(errorx.IllegalArgument.New(error_types.ErrorInvalidRequestBody))
 		return
 	}
+	_, err = mail.ParseAddress(clientLogin.Email)
 
-	phone := phonenumber.Parse(clientLogin.Phone, "ET")
-
-	if phone == "" {
-		_ = c.Error(errorx.IllegalArgument.New("invalid phone"))
+	if err != nil {
+		_ = c.Error(errorx.IllegalArgument.New("invalid email address"))
 		return
 	}
-	clientLogin.Phone = phone
 
 	ctx := c.Request.Context()
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*50))

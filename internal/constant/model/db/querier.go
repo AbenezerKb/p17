@@ -6,6 +6,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -15,14 +17,19 @@ type Querier interface {
 	AddMessage(ctx context.Context, arg AddMessageParams) (Message, error)
 	AddSystemConfig(ctx context.Context, arg AddSystemConfigParams) (SystemConfig, error)
 	AddTemplate(ctx context.Context, arg AddTemplateParams) (Template, error)
+	AddTransaction(ctx context.Context, arg AddTransactionParams) (ClientTransaction, error)
 	AddUser(ctx context.Context, arg AddUserParams) (User, error)
-	GetClient(ctx context.Context, phone string) (Client, error)
+	GetClient(ctx context.Context, email string) (Client, error)
 	GetClientBalance(ctx context.Context, clientID string) (Balance, error)
-	GetInvoices(ctx context.Context, invoiceNumber int64) (Invoice, error)
+	GetInvoice(ctx context.Context, invoiceNumber uuid.NullUUID) (Invoice, error)
+	GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthParams) (Invoice, error)
+	GetLastMonthBalance(ctx context.Context, clientID string) (Balance, error)
+	GetLastMonthClientTransaction(ctx context.Context, arg GetLastMonthClientTransactionParams) ([]ClientTransaction, error)
 	GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPrefixParams) ([]Message, error)
 	GetMessagesBySender(ctx context.Context, arg GetMessagesBySenderParams) ([]Message, error)
 	GetSystemConfig(ctx context.Context, settingName string) (SystemConfig, error)
 	GetUser(ctx context.Context, phone string) (User, error)
+	LastMonthMessagePriceAndCount(ctx context.Context, clientID string) ([]LastMonthMessagePriceAndCountRow, error)
 	ListAllBalance(ctx context.Context, arg ListAllBalanceParams) ([]Balance, error)
 	ListAllClients(ctx context.Context, arg ListAllClientsParams) ([]Client, error)
 	ListAllMessages(ctx context.Context, arg ListAllMessagesParams) ([]Message, error)
@@ -30,9 +37,10 @@ type Querier interface {
 	ListAllTemplates(ctx context.Context, arg ListAllTemplatesParams) ([]Template, error)
 	ListClientInvoices(ctx context.Context, arg ListClientInvoicesParams) ([]Invoice, error)
 	ListClientTemplates(ctx context.Context, arg ListClientTemplatesParams) ([]Template, error)
+	ListClients(ctx context.Context) ([]Client, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (Balance, error)
 	UpdateClient(ctx context.Context, arg UpdateClientParams) (Client, error)
-	UpdateClientBalance(ctx context.Context, arg UpdateClientBalanceParams) (Balance, error)
 	UpdateDeliveryStatus(ctx context.Context, arg UpdateDeliveryStatusParams) error
 	UpdateSystemConfig(ctx context.Context, arg UpdateSystemConfigParams) (SystemConfig, error)
 	UpdateTemplate(ctx context.Context, arg UpdateTemplateParams) (Template, error)

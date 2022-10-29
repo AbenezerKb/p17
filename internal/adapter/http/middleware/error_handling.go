@@ -1,23 +1,21 @@
 package middleware
 
 import (
-	const_init "sms-gateway/internal/constant/init"
-	"sms-gateway/internal/constant/rest"
-	"sms-gateway/internal/constant/rest/error_types"
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/joomcode/errorx"
+	"net/http"
+	const_init "sms-gateway/internal/constant/init"
+	"sms-gateway/internal/constant/rest"
+	"sms-gateway/internal/constant/rest/error_types"
+	"strings"
 )
-
 
 type errorHandlingMiddleWare struct {
 	utils const_init.Utils
 }
 
-func  ErrorHandling() gin.HandlerFunc {
+func ErrorHandling() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 		for _, err := range c.Errors {
@@ -26,7 +24,7 @@ func  ErrorHandling() gin.HandlerFunc {
 			status := http.StatusInternalServerError
 			if errorx.HasTrait(err, errorx.Timeout()) {
 				status = http.StatusRequestTimeout
-				
+
 			}
 			if errorx.HasTrait(err, errorx.Duplicate()) {
 				status = http.StatusBadRequest
@@ -63,12 +61,12 @@ func  ErrorHandling() gin.HandlerFunc {
 				status = http.StatusInternalServerError
 			}
 
-			if errorx.IsOfType(err, error_types.ErrInvalidToken){
+			if errorx.IsOfType(err, error_types.ErrInvalidToken) {
 				status = http.StatusUnauthorized
 			}
 			if e, ok := err.(validation.Errors); ok {
 				errResponse := &error_types.ErrorModel{
-					ErrorMessage:     err.Error()[strings.LastIndex(err.Error(),":")+2:len(err.Error())-1],
+					ErrorMessage:     err.Error()[strings.LastIndex(err.Error(), ":")+2 : len(err.Error())-1],
 					ErrorDescription: err.Error(),
 					ValidationErrors: e,
 				}

@@ -34,14 +34,18 @@ const (
 )
 
 func Initialize() {
-	DATABASE_URL, err := utils.DbConnectionString()
 
+	//Initializing zap logger
 	lg, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("error while initializing logger: %v", zap.Error(err))
 	}
+
 	logger := lg.Sugar()
 	logger.Info("logger initialized")
+
+	logger.Info("initializing database ")
+	DATABASE_URL, err := utils.DbConnectionString()
 
 	if err != nil {
 		log.Fatal("database connection failed!")
@@ -52,19 +56,28 @@ func Initialize() {
 	}
 	log.AddHook(hook)
 
+	//initializing utils
 	common, er := utils.GetUtils(DATABASE_URL, authModel)
 	if err != nil {
 		log.Fatal(er)
 	}
-	//casbin initialization
+	//initializing casbin
 	log.Info("initializing casbin")
 	enforcer := InitEnforcer(authModel, common.Conn)
+	log.Info("casbin initialized")
 
+	log.Info("initializing server")
 	router := gin.Default()
+	log.Info("server initialized")
+
+	//swagger
 	docs.SwaggerInfo.BasePath = "/api/v1"
+
 	routes := router.Group("/v1")
 	routes.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// mw := middleware(common)
+
+	//middleware
 	routes.Use(middleware.ErrorHandling())
 	// routes.Use(middleware.NewAuthorizer(logger))
 

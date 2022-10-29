@@ -18,7 +18,7 @@ type clientStorage struct {
 
 type ClientStorge interface {
 	AddClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
-	ListAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error)
+	ListAllClient(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error)
 	GetClient(ctx context.Context, phone string) (*dto.Client, error)
 	UpdateClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 }
@@ -55,13 +55,14 @@ func (c clientStorage) AddClient(ctx context.Context, client *dto.Client) (*dto.
 	return client, nil
 }
 
-func (c clientStorage) ListAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error) {
+func (c clientStorage) ListAllClient(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error) {
 	page, _ := strconv.ParseInt(params.Page, 10, 32)
 	perPage, _ := strconv.ParseInt(params.PerPage, 10, 32)
 
 	resizedPage := int32(page)
 	resizedPerPage := int32(perPage)
-	cl, err := c.dbp.ListAllClients(ctx, db.ListAllClientsParams{
+	//ListAllClients(ctx context.Context, arg ListAllClientsParams)
+	clients, err := c.ListAllClients(ctx, ListAllClientsParams{
 		Offset: resizedPage,
 		Limit:  resizedPerPage,
 	})
@@ -70,26 +71,52 @@ func (c clientStorage) ListAllClients(ctx context.Context, params *rest.QueryPar
 		return nil, error_types.GetDbError(err)
 	}
 
-	var cli []dto.Client
-
-	for _, v := range cl {
-		cli = append(cli, dto.Client{
-			Id:          v.ID.String(),
-			ClientTitle: v.Title,
-			Phone:       v.Phone,
-			Email:       v.Email,
-			Status:      v.Status,
-			Password:    v.Password,
-			CreatedAt:   v.CreatedAt,
-			UpdatedAt:   v.UpdatedAt,
-		})
-	}
-	return cli, nil
+	return clients, nil
 }
 
-func (c clientStorage) GetClient(ctx context.Context, phone string) (*dto.Client, error) {
+const listAllClients = `-- name: ListAllClients :many
+SELECT id, title, phone, email, password, status, created_at, updated_at FROM clients
+LIMIT $1
+OFFSET $2
+`
 
-	cl, err := c.dbp.GetClient(ctx, phone)
+type ListAllClientsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (c clientStorage) ListAllClients(ctx context.Context, arg ListAllClientsParams) ([]dto.Client, error) {
+	rows, err := c.db.Query(ctx, listAllClients, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []dto.Client{}
+	for rows.Next() {
+		var i dto.Client
+		if err := rows.Scan(
+			&i.Id,
+			&i.ClientTitle,
+			&i.Phone,
+			&i.Email,
+			&i.Password,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (c clientStorage) GetClient(ctx context.Context, email string) (*dto.Client, error) {
+
+	cl, err := c.dbp.GetClient(ctx, email)
 
 	if err != nil {
 		return nil, error_types.GetDbError(err)

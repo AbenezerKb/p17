@@ -6,6 +6,7 @@ CREATE TYPE message_type AS ENUM (
 
 CREATE TABLE messages (
                            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                           "client_id" STRING NOT NULL,
                            "sender_phone" STRING NOT NULL,
                            "content" STRING NOT NULL,
                            "price" DECIMAL NOT NULL,

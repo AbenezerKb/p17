@@ -9,9 +9,12 @@ SELECT * FROM clients
 LIMIT $1
 OFFSET $2;
 
+-- name: ListClients :many
+SELECT * FROM clients;
+
 -- name: GetClient :one
 SELECT * FROM clients
-WHERE phone=$1;
+WHERE email=$1;
 
 -- name: UpdateClient :one
 UPDATE clients SET

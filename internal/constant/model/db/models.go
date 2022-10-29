@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"github.com/shopspring/decimal"
 	"time"
 )
@@ -55,46 +56,88 @@ func (ns NullMessageType) Value() (driver.Value, error) {
 	return ns.MessageType, nil
 }
 
-type Payment string
+type PaymentType string
 
 const (
-	PaymentPrepaid  Payment = "Prepaid"
-	PaymentPostpaid Payment = "Postpaid"
+	PaymentTypePrepaid  PaymentType = "Prepaid"
+	PaymentTypePostpaid PaymentType = "Postpaid"
 )
 
-func (e *Payment) Scan(src interface{}) error {
+func (e *PaymentType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = Payment(s)
+		*e = PaymentType(s)
 	case string:
-		*e = Payment(s)
+		*e = PaymentType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for Payment: %T", src)
+		return fmt.Errorf("unsupported scan type for PaymentType: %T", src)
 	}
 	return nil
 }
 
-type NullPayment struct {
-	Payment Payment
-	Valid   bool // Valid is true if String is not NULL
+type NullPaymentType struct {
+	PaymentType PaymentType
+	Valid       bool // Valid is true if String is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullPayment) Scan(value interface{}) error {
+func (ns *NullPaymentType) Scan(value interface{}) error {
 	if value == nil {
-		ns.Payment, ns.Valid = "", false
+		ns.PaymentType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.Payment.Scan(value)
+	return ns.PaymentType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullPayment) Value() (driver.Value, error) {
+func (ns NullPaymentType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return ns.Payment, nil
+	return ns.PaymentType, nil
+}
+
+type Transfer string
+
+const (
+	TransferCREDITING Transfer = "CREDITING"
+	TransferDEBITING  Transfer = "DEBITING"
+)
+
+func (e *Transfer) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Transfer(s)
+	case string:
+		*e = Transfer(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Transfer: %T", src)
+	}
+	return nil
+}
+
+type NullTransfer struct {
+	Transfer Transfer
+	Valid    bool // Valid is true if String is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTransfer) Scan(value interface{}) error {
+	if value == nil {
+		ns.Transfer, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Transfer.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTransfer) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return ns.Transfer, nil
 }
 
 type Balance struct {
@@ -109,7 +152,7 @@ type Balance struct {
 type Client struct {
 	ID        uuid.UUID  `json:"id"`
 	Title     string     `json:"title"`
-	Phone     string     `json:"phone"`
+	Phone     []string   `json:"phone"`
 	Email     string     `json:"email"`
 	Password  string     `json:"password"`
 	Status    string     `json:"status"`
@@ -117,22 +160,32 @@ type Client struct {
 	UpdatedAt *time.Time `json:"updated_at"`
 }
 
+type ClientTransaction struct {
+	ID        uuid.UUID       `json:"id"`
+	ClientID  string          `json:"client_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	Type      Transfer        `json:"type"`
+	CreatedAt *time.Time      `json:"created_at"`
+}
+
 type Invoice struct {
-	ID            uuid.UUID       `json:"id"`
-	InvoiceNumber int64           `json:"invoice_number"`
-	ClientID      string          `json:"client_id"`
-	Payment       Payment         `json:"payment"`
-	Amount        decimal.Decimal `json:"amount"`
-	TotalMonthly  decimal.Decimal `json:"total_monthly"`
-	Discount      decimal.Decimal `json:"discount"`
-	Tax           decimal.Decimal `json:"tax"`
-	TaxRate       decimal.Decimal `json:"tax_rate"`
-	CreatedAt     *time.Time      `json:"created_at"`
-	UpdatedAt     *time.Time      `json:"updated_at"`
+	ID                 uuid.UUID       `json:"id"`
+	InvoiceNumber      uuid.NullUUID   `json:"invoice_number"`
+	ClientID           string          `json:"client_id"`
+	PaymentType        PaymentType     `json:"payment_type"`
+	CurrentBalance     decimal.Decimal `json:"current_balance"`
+	BalanceAtBeginning decimal.Decimal `json:"balance_at_beginning"`
+	Discount           decimal.Decimal `json:"discount"`
+	MessageCount       pgtype.JSONB    `json:"message_count"`
+	ClientTransaction  pgtype.JSONB    `json:"client_transaction"`
+	Tax                decimal.Decimal `json:"tax"`
+	TaxRate            decimal.Decimal `json:"tax_rate"`
+	CreatedAt          *time.Time      `json:"created_at"`
 }
 
 type Message struct {
 	ID             uuid.UUID       `json:"id"`
+	ClientID       string          `json:"client_id"`
 	SenderPhone    string          `json:"sender_phone"`
 	Content        string          `json:"content"`
 	Price          decimal.Decimal `json:"price"`

@@ -83,7 +83,7 @@ func (c clientModule) GetClient(ctx context.Context, phone string) (*dto.Client,
 func (c clientModule) Login(ctx context.Context, clientLogin *model.ClientLogin) (*string, error) {
 	var customClaims model.CustomClaims
 
-	token, err := customClaims.GenerateToken(clientLogin.Phone)
+	token, err := customClaims.GenerateToken(clientLogin.Email)
 	if err != nil {
 
 		//TODO ERROR HANDLING

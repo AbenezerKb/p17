@@ -8,34 +8,41 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"github.com/shopspring/decimal"
+	"time"
 )
 
 const addInvoice = `-- name: AddInvoice :one
 INSERT INTO invoice
-(invoice_number,client_id, payment, amount, total_monthly, discount, tax, tax_rate)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, invoice_number, client_id, payment, amount, total_monthly, discount, tax, tax_rate, created_at, updated_at
+(invoice_number,client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, discount, tax, tax_rate)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at
 `
 
 type AddInvoiceParams struct {
-	InvoiceNumber int64           `json:"invoice_number"`
-	ClientID      string          `json:"client_id"`
-	Payment       Payment         `json:"payment"`
-	Amount        decimal.Decimal `json:"amount"`
-	TotalMonthly  decimal.Decimal `json:"total_monthly"`
-	Discount      decimal.Decimal `json:"discount"`
-	Tax           decimal.Decimal `json:"tax"`
-	TaxRate       decimal.Decimal `json:"tax_rate"`
+	InvoiceNumber      uuid.NullUUID   `json:"invoice_number"`
+	ClientID           string          `json:"client_id"`
+	PaymentType        PaymentType     `json:"payment_type"`
+	CurrentBalance     decimal.Decimal `json:"current_balance"`
+	BalanceAtBeginning decimal.Decimal `json:"balance_at_beginning"`
+	MessageCount       pgtype.JSONB    `json:"message_count"`
+	ClientTransaction  pgtype.JSONB    `json:"client_transaction"`
+	Discount           decimal.Decimal `json:"discount"`
+	Tax                decimal.Decimal `json:"tax"`
+	TaxRate            decimal.Decimal `json:"tax_rate"`
 }
 
 func (q *Queries) AddInvoice(ctx context.Context, arg AddInvoiceParams) (Invoice, error) {
 	row := q.db.QueryRow(ctx, addInvoice,
 		arg.InvoiceNumber,
 		arg.ClientID,
-		arg.Payment,
-		arg.Amount,
-		arg.TotalMonthly,
+		arg.PaymentType,
+		arg.CurrentBalance,
+		arg.BalanceAtBeginning,
+		arg.MessageCount,
+		arg.ClientTransaction,
 		arg.Discount,
 		arg.Tax,
 		arg.TaxRate,
@@ -45,44 +52,77 @@ func (q *Queries) AddInvoice(ctx context.Context, arg AddInvoiceParams) (Invoice
 		&i.ID,
 		&i.InvoiceNumber,
 		&i.ClientID,
-		&i.Payment,
-		&i.Amount,
-		&i.TotalMonthly,
+		&i.PaymentType,
+		&i.CurrentBalance,
+		&i.BalanceAtBeginning,
 		&i.Discount,
+		&i.MessageCount,
+		&i.ClientTransaction,
 		&i.Tax,
 		&i.TaxRate,
 		&i.CreatedAt,
-		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getInvoices = `-- name: GetInvoices :one
-SELECT id, invoice_number, client_id, payment, amount, total_monthly, discount, tax, tax_rate, created_at, updated_at FROM invoice
+const getInvoice = `-- name: GetInvoice :one
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
 WHERE invoice_number=$1
 `
 
-func (q *Queries) GetInvoices(ctx context.Context, invoiceNumber int64) (Invoice, error) {
-	row := q.db.QueryRow(ctx, getInvoices, invoiceNumber)
+func (q *Queries) GetInvoice(ctx context.Context, invoiceNumber uuid.NullUUID) (Invoice, error) {
+	row := q.db.QueryRow(ctx, getInvoice, invoiceNumber)
 	var i Invoice
 	err := row.Scan(
 		&i.ID,
 		&i.InvoiceNumber,
 		&i.ClientID,
-		&i.Payment,
-		&i.Amount,
-		&i.TotalMonthly,
+		&i.PaymentType,
+		&i.CurrentBalance,
+		&i.BalanceAtBeginning,
 		&i.Discount,
+		&i.MessageCount,
+		&i.ClientTransaction,
 		&i.Tax,
 		&i.TaxRate,
 		&i.CreatedAt,
-		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getInvoiceByMonth = `-- name: GetInvoiceByMonth :one
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+WHERE client_id=$1
+AND created_at=$2
+`
+
+type GetInvoiceByMonthParams struct {
+	ClientID  string     `json:"client_id"`
+	CreatedAt *time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthParams) (Invoice, error) {
+	row := q.db.QueryRow(ctx, getInvoiceByMonth, arg.ClientID, arg.CreatedAt)
+	var i Invoice
+	err := row.Scan(
+		&i.ID,
+		&i.InvoiceNumber,
+		&i.ClientID,
+		&i.PaymentType,
+		&i.CurrentBalance,
+		&i.BalanceAtBeginning,
+		&i.Discount,
+		&i.MessageCount,
+		&i.ClientTransaction,
+		&i.Tax,
+		&i.TaxRate,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listClientInvoices = `-- name: ListClientInvoices :many
-SELECT id, invoice_number, client_id, payment, amount, total_monthly, discount, tax, tax_rate, created_at, updated_at FROM invoice
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, discount, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
 WHERE client_id=$1
 LIMIT $2
 OFFSET $3
@@ -107,14 +147,15 @@ func (q *Queries) ListClientInvoices(ctx context.Context, arg ListClientInvoices
 			&i.ID,
 			&i.InvoiceNumber,
 			&i.ClientID,
-			&i.Payment,
-			&i.Amount,
-			&i.TotalMonthly,
+			&i.PaymentType,
+			&i.CurrentBalance,
+			&i.BalanceAtBeginning,
 			&i.Discount,
+			&i.MessageCount,
+			&i.ClientTransaction,
 			&i.Tax,
 			&i.TaxRate,
 			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
