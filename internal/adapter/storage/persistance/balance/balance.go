@@ -23,6 +23,7 @@ type Storage interface {
 	GetAllBalances(ctx context.Context, params *rest.QueryParams) ([]dto.Balance, error)
 	GetCurrentClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
 	UpdateClientBalance(ctx context.Context, transfer model.Transfer, balance *dto.Balance) (*dto.Balance, error)
+	GetCreditedTransactions(ctx context.Context, ClientID string, Type db.Transfer) ([]dto.ClientTransaction, error)
 }
 
 func StorageInit(utils const_init.Utils) Storage {
@@ -173,6 +174,54 @@ func (b balanceStorage) ListAllBalances(ctx context.Context, arg ListAllBalanceP
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (b balanceStorage) GetCreditedTransactions(ctx context.Context, ClientID string, Type db.Transfer) ([]dto.ClientTransaction, error) {
+	txn, err := b.GetCreditedTransaction(ctx, GetCreditedTransactionParams{
+		ClientID,
+		Type,
+	})
+	if err != nil {
+		return nil, error_types.GetDbError(err)
+	}
+
+	return txn, nil
+}
+
+const getCreditedTransaction = `-- name: GetCreditedTransaction :many
+SELECT id, client_id, amount, type, created_at FROM client_transaction
+WHERE client_id=$1 AND type=$2 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
+`
+
+type GetCreditedTransactionParams struct {
+	ClientID string      `json:"client_id"`
+	Type     db.Transfer `json:"type"`
+}
+
+func (b balanceStorage) GetCreditedTransaction(ctx context.Context, arg GetCreditedTransactionParams) ([]dto.ClientTransaction, error) {
+	rows, err := b.db.Query(ctx, getCreditedTransaction, arg.ClientID, arg.Type)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []dto.ClientTransaction{}
+	for rows.Next() {
+		var i dto.ClientTransaction
+		if err := rows.Scan(
+			&i.Id,
+			&i.ClientId,
+			&i.Amount,
+			&i.Type,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

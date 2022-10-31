@@ -8,15 +8,16 @@ import (
 )
 
 type Message struct {
-	Id            string          `json:"id"`
-	ClientId      string          `json:"client_id"`
-	ReceiverPhone string          `json:"receiver_phone"`
-	SenderPhone   string          `json:"sender_phone"`
-	Content       string          `json:"content"`
-	Price         decimal.Decimal `json:"price"`
-	MsgType       db.MessageType  `json:"msg_type"`
-	Status        string          `json:"status"`
-	CreatedAt     *time.Time      `json:"created_at"`
+	Id             string          `json:"id"`
+	ClientId       string          `json:"client_id"`
+	ReceiverPhone  string          `json:"receiver_phone"`
+	SenderPhone    string          `json:"sender_phone"`
+	Content        string          `json:"content"`
+	Price          decimal.Decimal `json:"price"`
+	MsgType        db.MessageType  `json:"msg_type"`
+	Status         string          `json:"status"`
+	DeliveryStatus string          `json:"delivery_status"`
+	CreatedAt      *time.Time      `json:"created_at"`
 }
 
 func (m Message) Validate() error {

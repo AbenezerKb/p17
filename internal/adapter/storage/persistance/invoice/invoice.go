@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"github.com/goccy/go-json"
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/shopspring/decimal"
@@ -18,12 +19,15 @@ type invoiceStorage struct {
 	dbp db.Queries
 }
 
+//Storage interface for invoice storage
 type Storage interface {
-	GenerateInvoice(ctx context.Context, invoice []model.ClientInvoice) error
+	AddInvoice(ctx context.Context, clientInvoices []dto.ClientInvoice) error
 	ListClients(ctx context.Context) ([]dto.Client, error)
 	ListAllBalances(ctx context.Context, arg ListAllBalanceParams) ([]dto.Balance, error)
+	GetCurrentClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
 	GetLastMonthClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
 	GetLastMonthClientTransactions(ctx context.Context, clientId string) ([]dto.ClientTransaction, error)
+	LastMonthMessagesPriceAndCount(ctx context.Context, senderPhone string) ([]model.MessageCount, error)
 }
 
 func StorageInit(utils const_init.Utils) Storage {
@@ -31,35 +35,6 @@ func StorageInit(utils const_init.Utils) Storage {
 		db:  utils.Conn,
 		dbp: *db.New(utils.Conn),
 	}
-}
-
-//GenerateInvoice generates invoice for all clients monthly
-func (is invoiceStorage) GenerateInvoice(ctx context.Context, invoices []model.ClientInvoice) error {
-	for _, invoice := range invoices {
-		msgCount, _ := json.Marshal(invoice.MessageCount)
-		clientTxn, _ := json.Marshal(invoice.ClientTransactions)
-		_, err := is.dbp.AddInvoice(ctx, db.AddInvoiceParams{
-			ClientID:           invoice.Id,
-			CurrentBalance:     invoice.CurrentBalance,
-			PaymentType:        invoice.PaymentType,
-			BalanceAtBeginning: invoice.BalanceAtMonthBeginning,
-			MessageCount: pgtype.JSON{
-				Bytes:  msgCount,
-				Status: pgtype.Present,
-			},
-			ClientTransaction: pgtype.JSON{
-				Bytes:  clientTxn,
-				Status: pgtype.Present,
-			},
-			Tax:     invoice.Tax,
-			TaxRate: invoice.TaxRate,
-		})
-		if err != nil {
-			return error_types.GetDbError(err)
-
-		}
-	}
-	return nil
 }
 
 const listAllBalance = `-- name: ListAllBalance :many
@@ -121,6 +96,7 @@ func (is invoiceStorage) GetLastMonthClientBalance(ctx context.Context, clientId
 
 }
 
+//GetLastMonthClientTransactions It list the previous month transactions for the specific client and the type of transaction
 func (is invoiceStorage) GetLastMonthClientTransactions(ctx context.Context, clientId string) ([]dto.ClientTransaction, error) {
 	txn, err := is.GetLastMonthClientTransaction(ctx, GetLastMonthClientTransactionParams{ClientID: clientId, Type: db.TransferCREDITING})
 	if err != nil {
@@ -139,7 +115,6 @@ type GetLastMonthClientTransactionParams struct {
 	Type     db.Transfer `json:"type"`
 }
 
-//GetLastMonthClientTransaction It list the previous month transactions for the specific client and the type of transaction
 func (is invoiceStorage) GetLastMonthClientTransaction(ctx context.Context, arg GetLastMonthClientTransactionParams) ([]dto.ClientTransaction, error) {
 	rows, err := is.db.Query(ctx, getLastMonthClientTransaction, arg.ClientID, arg.Type)
 	if err != nil {
@@ -166,6 +141,7 @@ func (is invoiceStorage) GetLastMonthClientTransaction(ctx context.Context, arg 
 	return items, nil
 }
 
+//LastMonthMessagesPriceAndCount searches for the previous month sent messages count and their price
 func (is invoiceStorage) LastMonthMessagesPriceAndCount(ctx context.Context, clientId string) ([]model.MessageCount, error) {
 
 	messageCount, err := is.LastMonthMessagePriceAndCount(ctx, clientId)
@@ -243,4 +219,63 @@ func (is invoiceStorage) ListClients(ctx context.Context) ([]dto.Client, error) 
 		return nil, err
 	}
 	return items, nil
+}
+
+//AddInvoice insert generated invoices into database for all clients monthly
+func (is invoiceStorage) AddInvoice(ctx context.Context, clientInvoices []dto.ClientInvoice) error {
+
+	for _, invoice := range clientInvoices {
+		uid, _ := uuid.Parse(invoice.InvoiceNumber)
+		msgCount, err := json.Marshal(invoice.MessageCount)
+		if err != nil {
+			return err
+		}
+
+		clientTxn, err := json.Marshal(invoice.ClientTransaction)
+		if err != nil {
+			return err
+		}
+		_, err = is.dbp.AddInvoice(ctx, db.AddInvoiceParams{
+			InvoiceNumber:      uid,
+			ClientID:           invoice.ClientId,
+			PaymentType:        invoice.PaymentType,
+			CurrentBalance:     invoice.CurrentBalance,
+			BalanceAtBeginning: invoice.BalanceAtBeginning,
+			MessageCount: pgtype.JSON{
+				Bytes:  msgCount,
+				Status: pgtype.Present,
+			},
+			ClientTransaction: pgtype.JSON{
+				Bytes:  clientTxn,
+				Status: pgtype.Present,
+			},
+			Tax:     invoice.Tax,
+			TaxRate: invoice.TaxRate,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (is invoiceStorage) GetCurrentClientBalance(ctx context.Context, clientId string) (*dto.Balance, error) {
+
+	blc, err := is.dbp.GetClientBalance(ctx, clientId)
+
+	if err != nil {
+		return nil, error_types.GetDbError(err)
+	}
+
+	balance := &dto.Balance{
+		Id:        blc.ID.String(),
+		ClientId:  blc.ClientID,
+		Amount:    blc.Amount,
+		Status:    blc.Status,
+		CreatedAt: blc.CreatedAt,
+		UpdatedAt: blc.UpdatedAt,
+	}
+
+	return balance, nil
 }

@@ -3,7 +3,6 @@ package message
 import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/shopspring/decimal"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/model"
 	"sms-gateway/internal/constant/model/db"
@@ -23,7 +22,6 @@ type MessageStorage interface {
 	BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error)
 	ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 	GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
-	LastMonthMessagesPriceAndCount(ctx context.Context, clientId string) ([]model.MessageCount, error)
 }
 
 func MessageStorageInit(utils const_init.Utils) MessageStorage {
@@ -33,6 +31,7 @@ func MessageStorageInit(utils const_init.Utils) MessageStorage {
 	}
 }
 
+//AddMessage stores single message during message sending
 func (m messageStorage) AddMessage(ctx context.Context, message *dto.Message) (*dto.Message, error) {
 	ms, err := m.dbp.AddMessage(ctx, db.AddMessageParams{
 		message.SenderPhone,
@@ -44,14 +43,16 @@ func (m messageStorage) AddMessage(ctx context.Context, message *dto.Message) (*
 	})
 
 	msg := dto.Message{
-		ms.ID.String(),
-		ms.ReceiverPhone,
-		ms.SenderPhone,
-		ms.Content,
-		ms.Price,
-		ms.Type,
-		ms.Status,
-		ms.CreatedAt,
+		Id:             ms.ID.String(),
+		ClientId:       ms.ClientID,
+		ReceiverPhone:  ms.ReceiverPhone,
+		SenderPhone:    ms.SenderPhone,
+		Content:        ms.Content,
+		Price:          ms.Price,
+		MsgType:        ms.Type,
+		Status:         ms.Status,
+		DeliveryStatus: ms.DeliveryStatus,
+		CreatedAt:      ms.CreatedAt,
 	}
 	if err != nil {
 		return nil, error_types.GetDbError(err)
@@ -60,13 +61,14 @@ func (m messageStorage) AddMessage(ctx context.Context, message *dto.Message) (*
 	return &msg, nil
 }
 
+//ListAllMessages lists all messages
 func (m messageStorage) ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error) {
 	page, _ := strconv.ParseInt(params.Page, 10, 32)
 	perPage, _ := strconv.ParseInt(params.PerPage, 10, 32)
 
 	resizedPage := int32(page)
 	resizedPerPage := int32(perPage)
-	ms, err := m.dbp.ListAllMessages(ctx, db.ListAllMessagesParams{
+	msgs, err := m.ListMessages(ctx, ListAllMessagesParams{
 		resizedPage,
 		resizedPerPage,
 	})
@@ -75,30 +77,59 @@ func (m messageStorage) ListAllMessages(ctx context.Context, params *rest.QueryP
 		return nil, error_types.GetDbError(err)
 	}
 
-	var msg []dto.Message
-
-	for _, v := range ms {
-		msg = append(msg, dto.Message{
-			v.ID.String(),
-			v.ReceiverPhone,
-			v.SenderPhone,
-			v.Content,
-			v.Price,
-			v.Type,
-			v.Status,
-			v.CreatedAt,
-		})
-	}
-	return msg, nil
+	return msgs, nil
 }
 
-func (m messageStorage) GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error) {
+const listAllMessages = `-- name: ListAllMessages :many
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
+        LIMIT $1
+OFFSET $2
+`
+
+type ListAllMessagesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (ms messageStorage) ListMessages(ctx context.Context, arg ListAllMessagesParams) ([]dto.Message, error) {
+	rows, err := ms.db.Query(ctx, listAllMessages, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []dto.Message{}
+	for rows.Next() {
+		var i dto.Message
+		if err := rows.Scan(
+			&i.Id,
+			&i.ClientId,
+			&i.SenderPhone,
+			&i.Content,
+			&i.Price,
+			&i.ReceiverPhone,
+			&i.MsgType,
+			&i.Status,
+			&i.DeliveryStatus,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+//MessagesBySender lists all sender messages
+func (ms messageStorage) GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error) {
 	page, _ := strconv.ParseInt(params.Page, 10, 32)
 	perPage, _ := strconv.ParseInt(params.PerPage, 10, 32)
 
 	resizedPage := int32(page)
 	resizedPerPage := int32(perPage)
-	ms, err := m.dbp.GetMessagesBySender(ctx, db.GetMessagesBySenderParams{
+	msgs, err := ms.MessagesBySender(ctx, GetMessagesBySenderParams{
 		params.Filter,
 		resizedPage,
 		resizedPerPage,
@@ -108,52 +139,44 @@ func (m messageStorage) GetMessagesBySender(ctx context.Context, params *rest.Qu
 		return nil, error_types.GetDbError(err)
 	}
 
-	var msg []dto.Message
+	return msgs, nil
 
-	for _, v := range ms {
-		msg = append(msg, dto.Message{
-			v.ID.String(),
-			v.ReceiverPhone,
-			v.SenderPhone,
-			v.Content,
-			v.Price,
-			v.Type,
-			v.Status,
-			v.CreatedAt,
-		})
-	}
-	return msg, nil
 }
 
-func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error) {
-
-	return nil, nil
-}
-
-const lastMonthMessagesPriceAndCount = `-- name: LastMonthMessagesPriceAndCount :many
-SELECT  price, COUNT(id) as COUNT,
-        SUM (price) AS sum
-FROM public.messages
-WHERE sender_phone=$1 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
-GROUP BY  price
+const getMessagesBySender = `-- name: GetMessagesBySender :many
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
+WHERE sender_phone=$1
+LIMIT $2
+    OFFSET $3
 `
 
-type LastMonthMessagesPriceAndCountRow struct {
-	Price decimal.Decimal `json:"price"`
-	Count int64           `json:"count"`
-	Sum   int64           `json:"sum"`
+type GetMessagesBySenderParams struct {
+	SenderPhone string `json:"sender_phone"`
+	Limit       int32  `json:"limit"`
+	Offset      int32  `json:"offset"`
 }
 
-func (q messageStorage) LastMonthMessagesPriceAndCount(ctx context.Context, senderPhone string) ([]model.MessageCount, error) {
-	rows, err := q.db.Query(ctx, lastMonthMessagesPriceAndCount, senderPhone)
+func (ms messageStorage) MessagesBySender(ctx context.Context, arg GetMessagesBySenderParams) ([]dto.Message, error) {
+	rows, err := ms.db.Query(ctx, getMessagesBySender, arg.SenderPhone, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []model.MessageCount{}
+	items := []dto.Message{}
 	for rows.Next() {
-		var i model.MessageCount
-		if err := rows.Scan(&i.Price, &i.Count, &i.Sum); err != nil {
+		var i dto.Message
+		if err := rows.Scan(
+			&i.Id,
+			&i.ClientId,
+			&i.SenderPhone,
+			&i.Content,
+			&i.Price,
+			&i.ReceiverPhone,
+			&i.MsgType,
+			&i.Status,
+			&i.DeliveryStatus,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -162,4 +185,10 @@ func (q messageStorage) LastMonthMessagesPriceAndCount(ctx context.Context, send
 		return nil, err
 	}
 	return items, nil
+}
+
+//BatchOutGoingSMS sends messages in batch
+func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error) {
+
+	return nil, nil
 }

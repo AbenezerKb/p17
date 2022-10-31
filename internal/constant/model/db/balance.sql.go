@@ -15,7 +15,7 @@ const addBalance = `-- name: AddBalance :one
 INSERT INTO balance
     (client_id, amount, status)
     VALUES ($1, $2, $3)
-RETURNING id, client_id, amount, status, created_at, updated_at
+RETURNING id, client_id, amount, client_email, status, created_at, updated_at
 `
 
 type AddBalanceParams struct {
@@ -31,6 +31,7 @@ func (q *Queries) AddBalance(ctx context.Context, arg AddBalanceParams) (Balance
 		&i.ID,
 		&i.ClientID,
 		&i.Amount,
+		&i.ClientEmail,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -65,7 +66,7 @@ func (q *Queries) AddTransaction(ctx context.Context, arg AddTransactionParams) 
 }
 
 const getClientBalance = `-- name: GetClientBalance :one
-SELECT id, client_id, amount, status, created_at, updated_at FROM balance
+SELECT id, client_id, amount, client_email, status, created_at, updated_at FROM balance
       WHERE client_id=$1
 `
 
@@ -76,6 +77,7 @@ func (q *Queries) GetClientBalance(ctx context.Context, clientID string) (Balanc
 		&i.ID,
 		&i.ClientID,
 		&i.Amount,
+		&i.ClientEmail,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -83,41 +85,18 @@ func (q *Queries) GetClientBalance(ctx context.Context, clientID string) (Balanc
 	return i, err
 }
 
-const getLastMonthBalance = `-- name: GetLastMonthBalance :one
-SELECT id, client_id, amount, status, created_at, updated_at FROM balance
-WHERE client_id=$1
-  AND  updated_at >= date_trunc('month', current_date - interval '1' month)
-  AND updated_at < date_trunc('month', current_date)
-  ORDER BY updated_at DESC
-  LIMIT 1
-`
-
-func (q *Queries) GetLastMonthBalance(ctx context.Context, clientID string) (Balance, error) {
-	row := q.db.QueryRow(ctx, getLastMonthBalance, clientID)
-	var i Balance
-	err := row.Scan(
-		&i.ID,
-		&i.ClientID,
-		&i.Amount,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getLastMonthClientTransaction = `-- name: GetLastMonthClientTransaction :many
+const getCreditedTransaction = `-- name: GetCreditedTransaction :many
 SELECT id, client_id, amount, type, created_at FROM client_transaction
 WHERE client_id=$1 AND type=$2 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
 `
 
-type GetLastMonthClientTransactionParams struct {
+type GetCreditedTransactionParams struct {
 	ClientID string   `json:"client_id"`
 	Type     Transfer `json:"type"`
 }
 
-func (q *Queries) GetLastMonthClientTransaction(ctx context.Context, arg GetLastMonthClientTransactionParams) ([]ClientTransaction, error) {
-	rows, err := q.db.Query(ctx, getLastMonthClientTransaction, arg.ClientID, arg.Type)
+func (q *Queries) GetCreditedTransaction(ctx context.Context, arg GetCreditedTransactionParams) ([]ClientTransaction, error) {
+	rows, err := q.db.Query(ctx, getCreditedTransaction, arg.ClientID, arg.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +121,32 @@ func (q *Queries) GetLastMonthClientTransaction(ctx context.Context, arg GetLast
 	return items, nil
 }
 
+const getLastMonthBalance = `-- name: GetLastMonthBalance :one
+SELECT id, client_id, amount, client_email, status, created_at, updated_at FROM balance
+WHERE client_id=$1
+  AND  updated_at >= date_trunc('month', current_date - interval '1' month)
+  AND updated_at < date_trunc('month', current_date)
+  ORDER BY updated_at DESC
+  LIMIT 1
+`
+
+func (q *Queries) GetLastMonthBalance(ctx context.Context, clientID string) (Balance, error) {
+	row := q.db.QueryRow(ctx, getLastMonthBalance, clientID)
+	var i Balance
+	err := row.Scan(
+		&i.ID,
+		&i.ClientID,
+		&i.Amount,
+		&i.ClientEmail,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listAllBalance = `-- name: ListAllBalance :many
-SELECT id, client_id, amount, status, created_at, updated_at FROM balance
+SELECT id, client_id, amount, client_email, status, created_at, updated_at FROM balance
       LIMIT $1
       OFFSET $2
 `
@@ -166,6 +169,7 @@ func (q *Queries) ListAllBalance(ctx context.Context, arg ListAllBalanceParams) 
 			&i.ID,
 			&i.ClientID,
 			&i.Amount,
+			&i.ClientEmail,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -185,7 +189,7 @@ UPDATE balance
     SET  amount =  $2,
          updated_at = now()
     WHERE client_id=$1
-    RETURNING id, client_id, amount, status, created_at, updated_at
+    RETURNING id, client_id, amount, client_email, status, created_at, updated_at
 `
 
 type UpdateBalanceParams struct {
@@ -200,6 +204,7 @@ func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) (B
 		&i.ID,
 		&i.ClientID,
 		&i.Amount,
+		&i.ClientEmail,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,

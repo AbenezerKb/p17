@@ -14,7 +14,6 @@ CREATE TABLE messages (
                            "type" message_type NOT NULL,
                            "status" STRING NULL,
                            "delivery_status" STRING NULL,
-                           "message_id" STRING NULL,
                            "created_at" timestamp default now()
 );
 

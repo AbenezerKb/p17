@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -15,7 +16,7 @@ const addMessage = `-- name: AddMessage :one
 INSERT INTO public.messages
     (sender_phone, content, price, receiver_phone, type,status)
     VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at
+RETURNING id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at
 `
 
 type AddMessageParams struct {
@@ -47,14 +48,13 @@ func (q *Queries) AddMessage(ctx context.Context, arg AddMessageParams) (Message
 		&i.Type,
 		&i.Status,
 		&i.DeliveryStatus,
-		&i.MessageID,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getMessageWithPrefix = `-- name: GetMessageWithPrefix :many
-SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
     WHERE content LIKE $2 AND receiver_phone=$1
     LIMIT $3
     OFFSET $4
@@ -91,7 +91,6 @@ func (q *Queries) GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPr
 			&i.Type,
 			&i.Status,
 			&i.DeliveryStatus,
-			&i.MessageID,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -105,7 +104,7 @@ func (q *Queries) GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPr
 }
 
 const getMessagesBySender = `-- name: GetMessagesBySender :many
-SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
 WHERE sender_phone=$1
 LIMIT $2
     OFFSET $3
@@ -136,7 +135,6 @@ func (q *Queries) GetMessagesBySender(ctx context.Context, arg GetMessagesBySend
 			&i.Type,
 			&i.Status,
 			&i.DeliveryStatus,
-			&i.MessageID,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -184,7 +182,7 @@ func (q *Queries) LastMonthMessagePriceAndCount(ctx context.Context, clientID st
 }
 
 const listAllMessages = `-- name: ListAllMessages :many
-SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, message_id, created_at FROM public.messages
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
         LIMIT $1
 OFFSET $2
 `
@@ -213,7 +211,6 @@ func (q *Queries) ListAllMessages(ctx context.Context, arg ListAllMessagesParams
 			&i.Type,
 			&i.Status,
 			&i.DeliveryStatus,
-			&i.MessageID,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -229,15 +226,15 @@ func (q *Queries) ListAllMessages(ctx context.Context, arg ListAllMessagesParams
 const updateDeliveryStatus = `-- name: UpdateDeliveryStatus :exec
 UPDATE public.messages
 SET delivery_status = $2
-WHERE message_id = $1
+WHERE id = $1
 `
 
 type UpdateDeliveryStatusParams struct {
-	MessageID      string `json:"message_id"`
-	DeliveryStatus string `json:"delivery_status"`
+	ID             uuid.UUID `json:"id"`
+	DeliveryStatus string    `json:"delivery_status"`
 }
 
 func (q *Queries) UpdateDeliveryStatus(ctx context.Context, arg UpdateDeliveryStatusParams) error {
-	_, err := q.db.Exec(ctx, updateDeliveryStatus, arg.MessageID, arg.DeliveryStatus)
+	_, err := q.db.Exec(ctx, updateDeliveryStatus, arg.ID, arg.DeliveryStatus)
 	return err
 }

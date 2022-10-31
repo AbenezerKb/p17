@@ -42,9 +42,11 @@ func (c clientModule) AddClient(ctx context.Context, client *dto.Client) (*dto.C
 		return nil, err
 	}
 
-	phone := phonenumber.Parse(client.Phone, "ET")
-	if phone == "" {
-		return nil, errorx.IllegalArgument.New("incorrect phone number format")
+	for i := 0; i < len(client.Phone); i++ {
+		client.Phone[i] = phonenumber.Parse(client.Phone[i], "ET")
+		if client.Phone[i] == "" {
+			return nil, errorx.IllegalArgument.New("incorrect phone number format")
+		}
 	}
 
 	newClient, err := c.clientStorage.AddClient(ctx, client)
@@ -65,7 +67,7 @@ func (c clientModule) UpdateClient(ctx context.Context, client *dto.Client) (*dt
 
 func (c clientModule) GetAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error) {
 
-	clients, err := c.clientStorage.ListAllClients(ctx, params)
+	clients, err := c.clientStorage.ListAllClient(ctx, params)
 	if err != nil {
 		return nil, err
 	}

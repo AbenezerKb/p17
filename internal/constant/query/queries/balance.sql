@@ -34,6 +34,6 @@ WHERE client_id=$1
   ORDER BY updated_at DESC
   LIMIT 1;
 
--- name: GetLastMonthClientTransaction :many
+-- name: GetCreditedTransaction :many
 SELECT * FROM client_transaction
 WHERE client_id=$1 AND type=$2 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW();

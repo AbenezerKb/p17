@@ -12,6 +12,12 @@ LIMIT $2
 OFFSET $3;
 
 
+-- name: ListAllClientInvoices :many
+SELECT * FROM invoice
+WHERE client_id=$1;
+
+
+
 -- name: GetInvoice :one
 SELECT * FROM invoice
 WHERE invoice_number=$1;

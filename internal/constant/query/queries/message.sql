@@ -24,7 +24,7 @@ SELECT * FROM public.messages
 -- name: UpdateDeliveryStatus :exec
 UPDATE public.messages
 SET delivery_status = $2
-WHERE message_id = $1;
+WHERE id = $1;
 
 
 -- name: LastMonthMessagePriceAndCount :many

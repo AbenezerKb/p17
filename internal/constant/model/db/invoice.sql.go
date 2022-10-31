@@ -22,7 +22,7 @@ RETURNING id, invoice_number, client_id, payment_type, current_balance, balance_
 `
 
 type AddInvoiceParams struct {
-	InvoiceNumber      uuid.NullUUID   `json:"invoice_number"`
+	InvoiceNumber      uuid.UUID       `json:"invoice_number"`
 	ClientID           string          `json:"client_id"`
 	PaymentType        PaymentType     `json:"payment_type"`
 	CurrentBalance     decimal.Decimal `json:"current_balance"`
@@ -67,7 +67,7 @@ SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_
 WHERE invoice_number=$1
 `
 
-func (q *Queries) GetInvoice(ctx context.Context, invoiceNumber uuid.NullUUID) (Invoice, error) {
+func (q *Queries) GetInvoice(ctx context.Context, invoiceNumber uuid.UUID) (Invoice, error) {
 	row := q.db.QueryRow(ctx, getInvoice, invoiceNumber)
 	var i Invoice
 	err := row.Scan(
@@ -114,6 +114,43 @@ func (q *Queries) GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthPa
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listAllClientInvoices = `-- name: ListAllClientInvoices :many
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+WHERE client_id=$1
+`
+
+func (q *Queries) ListAllClientInvoices(ctx context.Context, clientID string) ([]Invoice, error) {
+	rows, err := q.db.Query(ctx, listAllClientInvoices, clientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Invoice{}
+	for rows.Next() {
+		var i Invoice
+		if err := rows.Scan(
+			&i.ID,
+			&i.InvoiceNumber,
+			&i.ClientID,
+			&i.PaymentType,
+			&i.CurrentBalance,
+			&i.BalanceAtBeginning,
+			&i.MessageCount,
+			&i.ClientTransaction,
+			&i.Tax,
+			&i.TaxRate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listClientInvoices = `-- name: ListClientInvoices :many

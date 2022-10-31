@@ -141,12 +141,13 @@ func (ns NullTransfer) Value() (driver.Value, error) {
 }
 
 type Balance struct {
-	ID        uuid.UUID       `json:"id"`
-	ClientID  string          `json:"client_id"`
-	Amount    decimal.Decimal `json:"amount"`
-	Status    string          `json:"status"`
-	CreatedAt *time.Time      `json:"created_at"`
-	UpdatedAt *time.Time      `json:"updated_at"`
+	ID          uuid.UUID       `json:"id"`
+	ClientID    string          `json:"client_id"`
+	Amount      decimal.Decimal `json:"amount"`
+	ClientEmail string          `json:"client_email"`
+	Status      string          `json:"status"`
+	CreatedAt   *time.Time      `json:"created_at"`
+	UpdatedAt   *time.Time      `json:"updated_at"`
 }
 
 type Client struct {
@@ -170,7 +171,7 @@ type ClientTransaction struct {
 
 type Invoice struct {
 	ID                 uuid.UUID       `json:"id"`
-	InvoiceNumber      uuid.NullUUID   `json:"invoice_number"`
+	InvoiceNumber      uuid.UUID       `json:"invoice_number"`
 	ClientID           string          `json:"client_id"`
 	PaymentType        PaymentType     `json:"payment_type"`
 	CurrentBalance     decimal.Decimal `json:"current_balance"`
@@ -192,7 +193,6 @@ type Message struct {
 	Type           MessageType     `json:"type"`
 	Status         string          `json:"status"`
 	DeliveryStatus string          `json:"delivery_status"`
-	MessageID      string          `json:"message_id"`
 	CreatedAt      *time.Time      `json:"created_at"`
 }
 
