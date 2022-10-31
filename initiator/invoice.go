@@ -1,0 +1,30 @@
+package initiator
+
+import (
+	"context"
+	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
+	log "github.com/sirupsen/logrus"
+	persistiance_invoice "sms-gateway/internal/adapter/storage/persistance/invoice"
+	const_init "sms-gateway/internal/constant/init"
+	module_invoice "sms-gateway/internal/module/invoice"
+)
+
+func InvoiceDomainInit(router *gin.RouterGroup, common const_init.Utils) {
+
+	invoiceStorage := persistiance_invoice.StorageInit(common)
+	invoiceModule := module_invoice.InvoiceModule(common, invoiceStorage)
+
+	cron := cron.New()
+
+	cronId, err := cron.AddFunc("@every 15m", func() {
+		err := invoiceModule.GenerateInvoice(context.Background())
+		if err != nil {
+			log.Panic(err)
+		}
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Info(cronId)
+}

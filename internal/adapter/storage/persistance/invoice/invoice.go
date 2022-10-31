@@ -8,7 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 	"golang.org/x/net/context"
 	const_init "sms-gateway/internal/constant/init"
-	"sms-gateway/internal/constant/model"
 	"sms-gateway/internal/constant/model/db"
 	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest/error_types"
@@ -27,7 +26,7 @@ type Storage interface {
 	GetCurrentClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
 	GetLastMonthClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
 	GetLastMonthClientTransactions(ctx context.Context, clientId string) ([]dto.ClientTransaction, error)
-	LastMonthMessagesPriceAndCount(ctx context.Context, senderPhone string) ([]model.MessageCount, error)
+	LastMonthMessagesPriceAndCount(ctx context.Context, senderPhone string) ([]dto.MessageCount, error)
 }
 
 func StorageInit(utils const_init.Utils) Storage {
@@ -142,7 +141,7 @@ func (is invoiceStorage) GetLastMonthClientTransaction(ctx context.Context, arg 
 }
 
 //LastMonthMessagesPriceAndCount searches for the previous month sent messages count and their price
-func (is invoiceStorage) LastMonthMessagesPriceAndCount(ctx context.Context, clientId string) ([]model.MessageCount, error) {
+func (is invoiceStorage) LastMonthMessagesPriceAndCount(ctx context.Context, clientId string) ([]dto.MessageCount, error) {
 
 	messageCount, err := is.LastMonthMessagePriceAndCount(ctx, clientId)
 	if err != nil {
@@ -167,15 +166,15 @@ type LastMonthMessagePriceAndCountRow struct {
 }
 
 //LastMonthMessagePriceAndCount lists the previous month messages count with their sum price
-func (is invoiceStorage) LastMonthMessagePriceAndCount(ctx context.Context, clientID string) ([]model.MessageCount, error) {
+func (is invoiceStorage) LastMonthMessagePriceAndCount(ctx context.Context, clientID string) ([]dto.MessageCount, error) {
 	rows, err := is.db.Query(ctx, lastMonthMessagePriceAndCount, clientID)
 	if err != nil {
 		return nil, error_types.GetDbError(err)
 	}
 	defer rows.Close()
-	items := []model.MessageCount{}
+	items := []dto.MessageCount{}
 	for rows.Next() {
-		var i model.MessageCount
+		var i dto.MessageCount
 		if err := rows.Scan(&i.Price, &i.Count, &i.Sum); err != nil {
 			return nil, err
 		}
@@ -231,16 +230,26 @@ func (is invoiceStorage) AddInvoice(ctx context.Context, clientInvoices []dto.Cl
 			return err
 		}
 
-		clientTxn, err := json.Marshal(invoice.ClientTransaction)
+		clientTxn, err := json.Marshal(invoice.ClientTransactions)
 		if err != nil {
 			return err
 		}
+
+		var paymentType db.PaymentType
+		switch invoice.PaymentType {
+		case dto.PaymentTypePrepaid:
+			paymentType = db.PaymentTypePrepaid
+		case dto.PaymentTypePostpaid:
+			paymentType = db.PaymentTypePostpaid
+
+		}
+
 		_, err = is.dbp.AddInvoice(ctx, db.AddInvoiceParams{
 			InvoiceNumber:      uid,
-			ClientID:           invoice.ClientId,
-			PaymentType:        invoice.PaymentType,
+			ClientID:           invoice.Id,
+			PaymentType:        paymentType,
 			CurrentBalance:     invoice.CurrentBalance,
-			BalanceAtBeginning: invoice.BalanceAtBeginning,
+			BalanceAtBeginning: invoice.BalanceAtMonthBeginning,
 			MessageCount: pgtype.JSON{
 				Bytes:  msgCount,
 				Status: pgtype.Present,

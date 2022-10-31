@@ -1,21 +1,19 @@
 package invoice
 
 import (
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/shopspring/decimal"
 	"golang.org/x/net/context"
 	"sms-gateway/internal/adapter/storage/persistance/invoice"
-	"sms-gateway/internal/constant/model"
+	const_init "sms-gateway/internal/constant/init"
+	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest/error_types"
 )
 
 type invoiceModule struct {
 	invoiceStorage invoice.Storage
-	validate       *validator.Validate
-	trans          ut.Translator
+	common         const_init.Utils
 }
 
 //TODO add invoice method check the id for valid UUID
@@ -25,10 +23,17 @@ type Module interface {
 	GenerateInvoice(ctx context.Context) error
 }
 
+func InvoiceModule(common const_init.Utils, invoiceStorage invoice.Storage) Module {
+	return invoiceModule{
+		invoiceStorage: invoiceStorage,
+		common:         common,
+	}
+}
+
 //GenerateInvoice generates invoices for all clients in monthly interval
 func (im invoiceModule) GenerateInvoice(ctx context.Context) error {
 
-	var clientInvoices []model.ClientInvoice
+	var clientInvoices []dto.ClientInvoice
 
 	dbx := pgxpool.Conn{}
 	err := dbx.BeginFunc(ctx, func(tx pgx.Tx) error {
@@ -65,7 +70,7 @@ func (im invoiceModule) GenerateInvoice(ctx context.Context) error {
 				return err
 			}
 
-			clientInvoice := model.ClientInvoice{
+			clientInvoice := dto.ClientInvoice{
 				PaymentType:             client.PaymentType,
 				ClientEmail:             client.Email,
 				BalanceAtMonthBeginning: lastMonthBlc.Amount,
