@@ -2,7 +2,6 @@ package initiator
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	persistiance_invoice "sms-gateway/internal/adapter/storage/persistance/invoice"
@@ -10,7 +9,7 @@ import (
 	module_invoice "sms-gateway/internal/module/invoice"
 )
 
-func InvoiceDomainInit(router *gin.RouterGroup, common const_init.Utils) {
+func InvoiceDomainInit(common const_init.Utils) {
 
 	invoiceStorage := persistiance_invoice.StorageInit(common)
 	invoiceModule := module_invoice.InvoiceModule(common, invoiceStorage)

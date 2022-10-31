@@ -84,6 +84,7 @@ func Initialize() {
 	// Register domains start
 	UserDomainInit(routes, common)
 	ClientDomainInit(enforcer, routes, common, logger)
+	InvoiceDomainInit(common)
 	//SubscriptionDomainInit(routes, common)
 	log.WithFields(log.Fields{
 		"host": os.Getenv("SERVER_HOST"),
