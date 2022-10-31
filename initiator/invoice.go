@@ -15,9 +15,9 @@ func InvoiceDomainInit(router *gin.RouterGroup, common const_init.Utils) {
 	invoiceStorage := persistiance_invoice.StorageInit(common)
 	invoiceModule := module_invoice.InvoiceModule(common, invoiceStorage)
 
-	cron := cron.New()
+	_cron := cron.New()
 
-	cronId, err := cron.AddFunc("@every 15m", func() {
+	cronId, err := _cron.AddFunc("@every 15m", func() {
 		err := invoiceModule.GenerateInvoice(context.Background())
 		if err != nil {
 			log.Panic(err)
