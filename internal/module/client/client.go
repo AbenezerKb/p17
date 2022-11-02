@@ -19,7 +19,7 @@ type clientModule struct {
 	trans         ut.Translator
 }
 
-type ClientModule interface {
+type Module interface {
 	AddClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 	UpdateClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 	GetAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error)
@@ -27,7 +27,7 @@ type ClientModule interface {
 	Login(ctx context.Context, clientLogin *model.ClientLogin) (*string, error)
 }
 
-func ClientInit(clientStorage client.ClientStorge, utils const_init.Utils) ClientModule {
+func InitModule(clientStorage client.ClientStorge, utils const_init.Utils) Module {
 	return clientModule{
 		clientStorage: clientStorage,
 		validate:      utils.GoValidator,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
 	const_init "sms-gateway/internal/constant/init"
-	"sms-gateway/internal/constant/model"
 	"sms-gateway/internal/constant/model/db"
 	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest"
@@ -17,14 +16,14 @@ type messageStorage struct {
 	dbp db.Queries
 }
 
-type MessageStorage interface {
+type Storage interface {
 	AddMessage(ctx context.Context, message *dto.Message) (*dto.Message, error)
-	BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error)
+	BatchOutGoingSMS(ctx context.Context, message []dto.Message) ([]dto.Message, error)
 	ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 	GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 }
 
-func MessageStorageInit(utils const_init.Utils) MessageStorage {
+func InitStorage(utils const_init.Utils) Storage {
 	return messageStorage{
 		db:  utils.Conn,
 		dbp: *db.New(utils.Conn),
@@ -188,7 +187,7 @@ func (ms messageStorage) MessagesBySender(ctx context.Context, arg GetMessagesBy
 }
 
 //BatchOutGoingSMS sends messages in batch
-func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*dto.Message, error) {
+func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message []dto.Message) ([]dto.Message, error) {
 
 	return nil, nil
 }

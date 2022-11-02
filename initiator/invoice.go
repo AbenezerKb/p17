@@ -12,7 +12,7 @@ import (
 func InvoiceDomainInit(common const_init.Utils) {
 
 	invoiceStorage := persistiance_invoice.StorageInit(common)
-	invoiceModule := module_invoice.InvoiceModule(common, invoiceStorage)
+	invoiceModule := module_invoice.InitModule(common, invoiceStorage)
 
 	_cron := cron.New()
 

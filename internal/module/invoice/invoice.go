@@ -21,9 +21,10 @@ type invoiceModule struct {
 //Module interface for invoice module
 type Module interface {
 	GenerateInvoice(ctx context.Context) error
+	GetClientInvoices(ctx context.Context, clientID string) ([]dto.ClientInvoice, error)
 }
 
-func InvoiceModule(common const_init.Utils, invoiceStorage invoice.Storage) Module {
+func InitModule(common const_init.Utils, invoiceStorage invoice.Storage) Module {
 	return invoiceModule{
 		invoiceStorage: invoiceStorage,
 		common:         common,
@@ -72,7 +73,7 @@ func (im invoiceModule) GenerateInvoice(ctx context.Context) error {
 
 			clientInvoice := dto.ClientInvoice{
 				PaymentType:             client.PaymentType,
-				ClientEmail:             client.Email,
+				ClientId:                client.Id,
 				BalanceAtMonthBeginning: lastMonthBlc.Amount,
 				CurrentBalance:          currentBlc.Amount,
 				MessageCount:            msgCount,
@@ -91,4 +92,13 @@ func (im invoiceModule) GenerateInvoice(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+//GetClientInvoices get the client invoice by searching using the client ID
+func (im invoiceModule) GetClientInvoices(ctx context.Context, clientId string) ([]dto.ClientInvoice, error) {
+	clientsInvoices, err := im.invoiceStorage.ListAllClientInvoices(ctx, clientId)
+	if err != nil {
+		return nil, err
+	}
+	return clientsInvoices, nil
 }

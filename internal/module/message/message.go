@@ -20,14 +20,14 @@ type messageModule struct {
 	trans          ut.Translator
 }
 
-type MessageModule interface {
+type Module interface {
 	OutGoingSMS(ctx context.Context, message *dto.Message) (*dto.Message, error)
 	BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*client.Response, error)
 	IncomingSMS(ctx context.Context, message *dto.Message) (*dto.Message, error)
 	GetAllClientMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 }
 
-func MessageInit(jasmin client.JasminClient, messageStorage message.MessageStorage, utils const_init.Utils) MessageModule {
+func InitModule(jasmin client.JasminClient, messageStorage message.MessageStorage, utils const_init.Utils) Module {
 	return messageModule{
 		jasmin:         jasmin,
 		messageStorage: messageStorage,
@@ -85,9 +85,14 @@ func (m messageModule) GetAllClientMessages(ctx context.Context, params *rest.Qu
 	return messages, nil
 }
 
-func (m messageModule) BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*client.Response, error) {
+func (m messageModule) BatchOutGoingSMS(ctx context.Context, message []dto.Message) (*client.Response, error) {
 
-	resp, err := m.jasmin.BatchOutGoingSMS(ctx, message)
+
+	msg := model.SMS{
+		To:
+	}
+	//TODO sending to jasmin
+	resp, err := m.jasmin.BatchOutGoingSMS(ctx, msg)
 
 	if err != nil {
 		return nil, err

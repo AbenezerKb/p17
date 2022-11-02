@@ -31,7 +31,7 @@ type ClientInvoice struct {
 	Id                      string          `json:"id"`
 	InvoiceNumber           string          `json:"invoice_number"`
 	PaymentType             PaymentType     `json:"payment_type"`
-	ClientEmail             string          `json:"client_email"`
+	ClientId                string          `json:"client_id"`
 	BalanceAtMonthBeginning decimal.Decimal `json:"balance_at_month_beginning"`
 	CurrentBalance          decimal.Decimal `json:"current_balance"`
 	//Discount                []decimal.Decimal   `json:"discount"`

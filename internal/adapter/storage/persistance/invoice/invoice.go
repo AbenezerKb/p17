@@ -21,6 +21,7 @@ type invoiceStorage struct {
 //Storage interface for invoice storage
 type Storage interface {
 	AddInvoice(ctx context.Context, clientInvoices []dto.ClientInvoice) error
+	ListAllClientInvoices(ctx context.Context, clientID string) ([]dto.ClientInvoice, error)
 	ListClients(ctx context.Context) ([]dto.Client, error)
 	ListAllBalances(ctx context.Context, arg ListAllBalanceParams) ([]dto.Balance, error)
 	GetCurrentClientBalance(ctx context.Context, clientId string) (*dto.Balance, error)
@@ -287,4 +288,41 @@ func (is invoiceStorage) GetCurrentClientBalance(ctx context.Context, clientId s
 	}
 
 	return balance, nil
+}
+
+const listAllClientInvoices = `-- name: ListAllClientInvoices :many
+SELECT id, invoice_number, client_id, payment_type, current_balance, balance_at_beginning, message_count, client_transaction, tax, tax_rate, created_at FROM invoice
+WHERE client_id=$1
+`
+
+func (is invoiceStorage) ListAllClientInvoices(ctx context.Context, clientID string) ([]dto.ClientInvoice, error) {
+	rows, err := is.db.Query(ctx, listAllClientInvoices, clientID)
+	if err != nil {
+		return nil, error_types.GetDbError(err)
+	}
+	defer rows.Close()
+	items := []dto.ClientInvoice{}
+	for rows.Next() {
+		var i dto.ClientInvoice
+		if err := rows.Scan(
+			&i.Id,
+			&i.InvoiceNumber,
+			&i.ClientId,
+			&i.PaymentType,
+			&i.CurrentBalance,
+			&i.BalanceAtMonthBeginning,
+			&i.MessageCount,
+			&i.ClientTransactions,
+			&i.Tax,
+			&i.TaxRate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, error_types.GetDbError(err)
+	}
+	return items, nil
 }

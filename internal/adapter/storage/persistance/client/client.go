@@ -16,14 +16,14 @@ type clientStorage struct {
 	dbp db.Queries
 }
 
-type ClientStorge interface {
+type Storage interface {
 	AddClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 	ListAllClient(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error)
 	GetClient(ctx context.Context, phone string) (*dto.Client, error)
 	UpdateClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 }
 
-func ClientStorageInit(utils const_init.Utils) ClientStorge {
+func InitStorage(utils const_init.Utils) Storage {
 	return clientStorage{
 		db:  utils.Conn,
 		dbp: *db.New(utils.Conn),

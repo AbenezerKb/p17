@@ -24,14 +24,14 @@ func ClientDomainInit(casbin *casbin.Enforcer, router *gin.RouterGroup, common c
 	cli := client2.ClientInit(common)
 
 	//client
-	clientStorage := clstorage.ClientStorageInit(common)
-	clientModule := clmodule.ClientInit(clientStorage, common)
-	clientHandler := clhandler.ClientHandlerInit(clientModule, common)
+	clientStorage := clstorage.InitStorage(common)
+	clientModule := clmodule.InitModule(clientStorage, common)
+	clientHandler := clhandler.InitHandler(clientModule, common)
 
 	//message
-	messageStorage := mstorage.MessageStorageInit(common)
-	messageModule := mmodule.MessageInit(cli, messageStorage, common)
-	messageHandler := mhandler.MessageHandlerInit(messageModule, common)
+	messageStorage := mstorage.InitStorage(common)
+	messageModule := mmodule.InitModule(cli, messageStorage, common)
+	messageHandler := mhandler.InitHandler(messageModule, common)
 
 	//template
 	templaeStorage := tstorage.TemplateStorageInit(common)

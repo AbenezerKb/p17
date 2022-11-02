@@ -18,12 +18,12 @@ import (
 )
 
 type messageHandler struct {
-	messageModules messageModule.MessageModule
+	messageModules messageModule.Module
 	validate       *validator.Validate
 	trans          ut.Translator
 }
 
-type MessageHandler interface {
+type Handler interface {
 	SendSMS(c *gin.Context)
 	SendBatchSMS(c *gin.Context)
 	ReceiveSMS(c *gin.Context)
@@ -32,7 +32,7 @@ type MessageHandler interface {
 
 var messageSuccessReplay = "Message Sent Successfully"
 
-func MessageHandlerInit(messageModules messageModule.MessageModule, utils const_init.Utils) MessageHandler {
+func InitHandler(messageModules messageModule.Module, utils const_init.Utils) Handler {
 	return messageHandler{
 		messageModules: messageModules,
 		validate:       utils.GoValidator,

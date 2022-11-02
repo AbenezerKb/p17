@@ -20,12 +20,12 @@ import (
 )
 
 type clientHandler struct {
-	clientModules clientModule.ClientModule
+	clientModules clientModule.Module
 	validate      *validator.Validate
 	trans         ut.Translator
 }
 
-type ClientHandler interface {
+type Handler interface {
 	AddClient(c *gin.Context)
 	UpdateClient(c *gin.Context)
 	GetAllClients(c *gin.Context)
@@ -33,7 +33,7 @@ type ClientHandler interface {
 	ClientLogin(c *gin.Context)
 }
 
-func ClientHandlerInit(clientModules clientModule.ClientModule, utils const_init.Utils) ClientHandler {
+func InitHandler(clientModules clientModule.Module, utils const_init.Utils) Handler {
 	return clientHandler{
 		clientModules: clientModules,
 		validate:      utils.GoValidator,
