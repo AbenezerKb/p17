@@ -14,12 +14,12 @@ import (
 )
 
 type clientModule struct {
-	clientStorage client.ClientStorge
+	clientStorage client.Storage
 	validate      *validator.Validate
 	trans         ut.Translator
 }
 
-type ClientModule interface {
+type Module interface {
 	AddClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 	UpdateClient(ctx context.Context, client *dto.Client) (*dto.Client, error)
 	GetAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error)
@@ -27,7 +27,7 @@ type ClientModule interface {
 	Login(ctx context.Context, clientLogin *model.ClientLogin) (*string, error)
 }
 
-func ClientInit(clientStorage client.ClientStorge, utils const_init.Utils) ClientModule {
+func InitModule(clientStorage client.Storage, utils const_init.Utils) Module {
 	return clientModule{
 		clientStorage: clientStorage,
 		validate:      utils.GoValidator,
@@ -42,9 +42,11 @@ func (c clientModule) AddClient(ctx context.Context, client *dto.Client) (*dto.C
 		return nil, err
 	}
 
-	phone := phonenumber.Parse(client.Phone, "ET")
-	if phone == "" {
-		return nil, errorx.IllegalArgument.New("incorrect phone number format")
+	for i := 0; i < len(client.Phone); i++ {
+		client.Phone[i] = phonenumber.Parse(client.Phone[i], "ET")
+		if client.Phone[i] == "" {
+			return nil, errorx.IllegalArgument.New("incorrect phone number format")
+		}
 	}
 
 	newClient, err := c.clientStorage.AddClient(ctx, client)
@@ -65,7 +67,7 @@ func (c clientModule) UpdateClient(ctx context.Context, client *dto.Client) (*dt
 
 func (c clientModule) GetAllClients(ctx context.Context, params *rest.QueryParams) ([]dto.Client, error) {
 
-	clients, err := c.clientStorage.ListAllClients(ctx, params)
+	clients, err := c.clientStorage.ListAllClient(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +85,7 @@ func (c clientModule) GetClient(ctx context.Context, phone string) (*dto.Client,
 func (c clientModule) Login(ctx context.Context, clientLogin *model.ClientLogin) (*string, error) {
 	var customClaims model.CustomClaims
 
-	token, err := customClaims.GenerateToken(clientLogin.Phone)
+	token, err := customClaims.GenerateToken(clientLogin.Email)
 	if err != nil {
 
 		//TODO ERROR HANDLING

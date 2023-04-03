@@ -87,15 +87,29 @@ CREATE TYPE payment AS ENUM (
 
 CREATE TABLE invoice (
                          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                         "invoice_number" bigint,
+                         "invoice_number" bigint NOT NULL ,
                          "client_id" STRING NOT NULL ,
-                         "payment" payment NOT NULL,
-                         "amount" DECIMAL NOT NULL,
-                         "total_monthly" DECIMAL NULL,
-                         "discount" DECIMAL NULL,
-                         "tax" DECIMAL NULL,
-                         "tax_rate" DECIMAL NULL,
-                         "created_at" timestamp default now(),
-                         "updated_at" timestamp NULL
+                         "payment_type" payment NOT NULL,
+                         "current_balance" DECIMAL NOT NULL,
+                         "balance_at_beginning" DECIMAL NOT NULL,
+                         "discount" DECIMAL NOT NULL,
+                         "MessageCount" jsonb NOT NULL ,
+                         "ClientTransaction" jsonb NOT NULL ,
+                         "tax" DECIMAL NOT NULL,
+                         "tax_rate" DECIMAL NOT NULL,
+                         "created_at" timestamp default now()
 );
 
+
+CREATE TYPE transfer AS ENUM (
+    'CREDITING',
+    'DEBITING'
+    );
+
+CREATE TABLE client_transaction(
+                                   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                   "client_id" STRING UNIQUE NOT NULL ,
+                                   "amount" DECIMAL NOT NULL,
+                                   "type" transfer NOT NULL,
+                                   "created_at" timestamp default now()
+);

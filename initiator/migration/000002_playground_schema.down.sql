@@ -15,3 +15,8 @@ DROP TYPE IF EXISTS message_type;
 DROP TABLE IF EXISTS invoice;
 
 DROP TYPE IF EXISTS payment;
+
+DROP TYPE IF EXISTS client_transaction;
+
+DROP TYPE IF EXISTS transfer;
+

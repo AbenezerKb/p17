@@ -1,11 +1,11 @@
 FROM golang:alpine AS builder
 WORKDIR /
 ADD . .
-RUN go build -o bin/sewasew /cmd/rest/main.go
+RUN go build -o bin/sms-gateway /cmd/rest/main.go
 
 FROM alpine
 WORKDIR /
-COPY --from=builder /bin/sewasew .
+COPY --from=builder /bin/sms-gateway .
 
 
-ENTRYPOINT [ "./sewasew" ]
+ENTRYPOINT [ "./sms-gateway" ]
