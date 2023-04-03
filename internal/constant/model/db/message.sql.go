@@ -53,6 +53,29 @@ func (q *Queries) AddMessage(ctx context.Context, arg AddMessageParams) (Message
 	return i, err
 }
 
+const getMessageById = `-- name: GetMessageById :one
+SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
+WHERE id=$1
+`
+
+func (q *Queries) GetMessageById(ctx context.Context, id uuid.UUID) (Message, error) {
+	row := q.db.QueryRow(ctx, getMessageById, id)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.ClientID,
+		&i.SenderPhone,
+		&i.Content,
+		&i.Price,
+		&i.ReceiverPhone,
+		&i.Type,
+		&i.Status,
+		&i.DeliveryStatus,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getMessageWithPrefix = `-- name: GetMessageWithPrefix :many
 SELECT id, client_id, sender_phone, content, price, receiver_phone, type, status, delivery_status, created_at FROM public.messages
     WHERE content LIKE $2 AND receiver_phone=$1

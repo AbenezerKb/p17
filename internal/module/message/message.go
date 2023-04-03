@@ -15,7 +15,7 @@ import (
 
 type messageModule struct {
 	jasmin         client.JasminClient
-	messageStorage message.MessageStorage
+	messageStorage message.Storage
 	validate       *validator.Validate
 	trans          ut.Translator
 }
@@ -25,9 +25,10 @@ type Module interface {
 	BatchOutGoingSMS(ctx context.Context, message *model.SMS) (*client.Response, error)
 	IncomingSMS(ctx context.Context, message *dto.Message) (*dto.Message, error)
 	GetAllClientMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
+	GetMessage(ctx context.Context, id string) (*dto.Message, error)
 }
 
-func InitModule(jasmin client.JasminClient, messageStorage message.MessageStorage, utils const_init.Utils) Module {
+func InitModule(jasmin client.JasminClient, messageStorage message.Storage, utils const_init.Utils) Module {
 	return messageModule{
 		jasmin:         jasmin,
 		messageStorage: messageStorage,
@@ -85,24 +86,29 @@ func (m messageModule) GetAllClientMessages(ctx context.Context, params *rest.Qu
 	return messages, nil
 }
 
-func (m messageModule) BatchOutGoingSMS(ctx context.Context, message []dto.Message) (*client.Response, error) {
-
+func (m messageModule) BatchOutGoingSMS(ctx context.Context, sms *model.SMS) (*client.Response, error) {
 
 	msg := model.SMS{
-		To:
+		// To:message[0]
 	}
 	//TODO sending to jasmin
-	resp, err := m.jasmin.BatchOutGoingSMS(ctx, msg)
+	resp, err := m.jasmin.BatchOutGoingSMS(ctx, &msg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = m.messageStorage.BatchOutGoingSMS(ctx, message)
+	//TODO save bulk sms to persistance
+	// _, err = m.messageStorage.BatchOutGoingSMS(ctx, sms)
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return resp, nil
+}
+
+func (m messageModule) GetMessage(ctx context.Context, id string) (*dto.Message, error) {
+	// TODO: MODULE IMPLEMENTATION
+	return nil, nil
 }

@@ -21,7 +21,7 @@ type TemplateModule interface {
 	UpdateTemplate(ctx context.Context, template *dto.Template) (*dto.Template, error)
 	GetAllTemplate(ctx context.Context, params *rest.QueryParams) ([]dto.Template, error)
 	GetAllClientTemplate(ctx context.Context, params *rest.QueryParams) ([]dto.Template, error)
-	//GetTemplate(ctx context.Context, templateId string) (*dto.Template, error)
+	GetTemplate(ctx context.Context, templateId string) (*dto.Template, error)
 }
 
 func TemplateInit(templateStorage template.TemplateStorage, utils const_init.Utils) TemplateModule {
@@ -73,10 +73,10 @@ func (t templateModule) GetAllClientTemplate(ctx context.Context, params *rest.Q
 
 }
 
-//func (t templateModule) GetTemplate(ctx context.Context, templateId string) (*dto.Template, error) {
-//	template, err :=t.templateStorage.GetTemplate(ctx,templateId)
-//if err != nil {
-//return nil, err
-//}
-//return templates, nil
-//}
+func (t templateModule) GetTemplate(ctx context.Context, templateId string) (*dto.Template, error) {
+	template, err := t.templateStorage.GetTemplate(ctx, templateId)
+	if err != nil {
+		return nil, err
+	}
+	return template, nil
+}

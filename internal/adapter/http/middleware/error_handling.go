@@ -1,14 +1,15 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/joomcode/errorx"
 	"net/http"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/rest"
 	"sms-gateway/internal/constant/rest/error_types"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/joomcode/errorx"
 )
 
 type errorHandlingMiddleWare struct {
@@ -94,5 +95,37 @@ func ErrorHandling() gin.HandlerFunc {
 				})
 			}
 		}
+	}
+}
+
+func ExtractUserId(id string, modules Modules) gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+		ctx.Next()
+		id := ctx.Param("id")
+
+		switch id {
+		case "message":
+
+			message, err := modules.messageModule.GetMessage(ctx.Request.Context(), id)
+			if err != nil {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+
+			}
+			ctx.Set("Id", message.ClientId)
+
+		case "template":
+
+			message, err := modules.messageModule.GetMessage(ctx.Request.Context(), id)
+			if err != nil {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+
+			}
+			ctx.Set("Id", message.ClientId)
+		}
+
 	}
 }

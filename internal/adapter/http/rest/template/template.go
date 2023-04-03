@@ -148,19 +148,19 @@ func (t templateHandler) GetAllClientTemplates(c *gin.Context) {
 }
 
 func (t templateHandler) GetTemplate(c *gin.Context) {
-	//
-	//ctx := c.Request.Context()
-	//templateid := c.Param("templateid")
-	//ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*50))
-	//defer cancel()
-	//
-	//c.Request = c.Request.WithContext(ctx)
-	//
-	//client, err := t.templateModules..GetTemplate(ctx, templateid)
-	//if err != nil {
-	//	c.Error(err)
-	//	return
-	//}
-	//
-	//rest.SuccessResponseJson(c, nil, &client, http.StatusOK)
+
+	ctx := c.Request.Context()
+	templateid := c.Param("templateid")
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*50))
+	defer cancel()
+
+	c.Request = c.Request.WithContext(ctx)
+
+	client, err := t.templateModules.GetTemplate(ctx, templateid)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	rest.SuccessResponseJson(c, nil, &client, http.StatusOK)
 }

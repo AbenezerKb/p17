@@ -34,3 +34,8 @@ FROM public.messages
 WHERE client_id=$1 AND "created_at" BETWEEN NOW() - INTERVAL '1 MONTH' AND NOW()
 GROUP BY  price;
 
+
+
+-- name: GetMessageById :one
+SELECT * FROM public.messages
+WHERE id=$1;

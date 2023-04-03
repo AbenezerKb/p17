@@ -25,6 +25,7 @@ type Querier interface {
 	GetInvoice(ctx context.Context, invoiceNumber uuid.UUID) (Invoice, error)
 	GetInvoiceByMonth(ctx context.Context, arg GetInvoiceByMonthParams) (Invoice, error)
 	GetLastMonthBalance(ctx context.Context, clientID string) (Balance, error)
+	GetMessageById(ctx context.Context, id uuid.UUID) (Message, error)
 	GetMessageWithPrefix(ctx context.Context, arg GetMessageWithPrefixParams) ([]Message, error)
 	GetMessagesBySender(ctx context.Context, arg GetMessagesBySenderParams) ([]Message, error)
 	GetSystemConfig(ctx context.Context, settingName string) (SystemConfig, error)

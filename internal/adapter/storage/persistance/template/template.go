@@ -21,6 +21,7 @@ type TemplateStorage interface {
 	UpdateTemplate(ctx context.Context, template *dto.Template) (*dto.Template, error)
 	GetAllTemplates(ctx context.Context, params *rest.QueryParams) ([]dto.Template, error)
 	GetAllClientTemplates(ctx context.Context, params *rest.QueryParams) ([]dto.Template, error)
+	GetTemplate(ctx context.Context, templateId string) (*dto.Template, error)
 }
 
 func TemplateStorageInit(utils const_init.Utils) TemplateStorage {
@@ -157,4 +158,9 @@ func (q templateStorage) ListAllTemplates(ctx context.Context, arg ListAllTempla
 		return nil, err
 	}
 	return items, nil
+}
+
+func (t templateStorage) GetTemplate(ctx context.Context, templateId string) (*dto.Template, error) {
+	// TODO: PERSISTANCE IMPLEMENTATION
+	return nil, nil
 }

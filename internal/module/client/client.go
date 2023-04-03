@@ -14,7 +14,7 @@ import (
 )
 
 type clientModule struct {
-	clientStorage client.ClientStorge
+	clientStorage client.Storage
 	validate      *validator.Validate
 	trans         ut.Translator
 }
@@ -27,7 +27,7 @@ type Module interface {
 	Login(ctx context.Context, clientLogin *model.ClientLogin) (*string, error)
 }
 
-func InitModule(clientStorage client.ClientStorge, utils const_init.Utils) Module {
+func InitModule(clientStorage client.Storage, utils const_init.Utils) Module {
 	return clientModule{
 		clientStorage: clientStorage,
 		validate:      utils.GoValidator,

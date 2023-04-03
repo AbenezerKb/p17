@@ -42,6 +42,7 @@ func InitHandler(clientModules clientModule.Module, utils const_init.Utils) Hand
 }
 
 func (cl clientHandler) AddClient(c *gin.Context) {
+	
 	client := &dto.Client{}
 	err := c.ShouldBind(client)
 	if err != nil {
@@ -97,6 +98,7 @@ func (cl clientHandler) UpdateClient(c *gin.Context) {
 
 func (cl clientHandler) GetAllClients(c *gin.Context) {
 
+	//TODO use defaultQuery
 	params := rest.QueryParams{
 		Page:    c.Query("page"),
 		PerPage: c.Query("per_page"),

@@ -2,13 +2,15 @@ package message
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4/pgxpool"
 	const_init "sms-gateway/internal/constant/init"
 	"sms-gateway/internal/constant/model/db"
 	"sms-gateway/internal/constant/model/dto"
 	"sms-gateway/internal/constant/rest"
 	"sms-gateway/internal/constant/rest/error_types"
 	"strconv"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type messageStorage struct {
@@ -18,6 +20,7 @@ type messageStorage struct {
 
 type Storage interface {
 	AddMessage(ctx context.Context, message *dto.Message) (*dto.Message, error)
+	GetMessage(ctx context.Context, id string) (*dto.Message, error)
 	BatchOutGoingSMS(ctx context.Context, message []dto.Message) ([]dto.Message, error)
 	ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
 	GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error)
@@ -30,7 +33,7 @@ func InitStorage(utils const_init.Utils) Storage {
 	}
 }
 
-//AddMessage stores single message during message sending
+// AddMessage stores single message during message sending
 func (m messageStorage) AddMessage(ctx context.Context, message *dto.Message) (*dto.Message, error) {
 	ms, err := m.dbp.AddMessage(ctx, db.AddMessageParams{
 		message.SenderPhone,
@@ -60,7 +63,7 @@ func (m messageStorage) AddMessage(ctx context.Context, message *dto.Message) (*
 	return &msg, nil
 }
 
-//ListAllMessages lists all messages
+// ListAllMessages lists all messages
 func (m messageStorage) ListAllMessages(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error) {
 	page, _ := strconv.ParseInt(params.Page, 10, 32)
 	perPage, _ := strconv.ParseInt(params.PerPage, 10, 32)
@@ -121,7 +124,7 @@ func (ms messageStorage) ListMessages(ctx context.Context, arg ListAllMessagesPa
 	return items, nil
 }
 
-//MessagesBySender lists all sender messages
+// MessagesBySender lists all sender messages
 func (ms messageStorage) GetMessagesBySender(ctx context.Context, params *rest.QueryParams) ([]dto.Message, error) {
 	page, _ := strconv.ParseInt(params.Page, 10, 32)
 	perPage, _ := strconv.ParseInt(params.PerPage, 10, 32)
@@ -186,8 +189,32 @@ func (ms messageStorage) MessagesBySender(ctx context.Context, arg GetMessagesBy
 	return items, nil
 }
 
-//BatchOutGoingSMS sends messages in batch
+// BatchOutGoingSMS sends messages in batch
 func (m messageStorage) BatchOutGoingSMS(ctx context.Context, message []dto.Message) ([]dto.Message, error) {
 
 	return nil, nil
+}
+
+func (mm messageStorage) GetMessage(ctx context.Context, id string) (*dto.Message, error) {
+	uid, _ := uuid.Parse(id)
+	msg, err := mm.dbp.GetMessageById(ctx, uid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	message := dto.Message{
+		Id:             msg.ID.String(),
+		ClientId:       msg.ClientID,
+		ReceiverPhone:  msg.ReceiverPhone,
+		SenderPhone:    msg.SenderPhone,
+		Content:        msg.Content,
+		Price:          msg.Price,
+		MsgType:        msg.Type,
+		Status:         msg.Status,
+		DeliveryStatus: msg.DeliveryStatus,
+		CreatedAt:      msg.CreatedAt,
+	}
+	return &message, nil
+
 }
