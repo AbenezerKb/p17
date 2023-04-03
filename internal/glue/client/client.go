@@ -10,7 +10,7 @@ import (
 	"sms-gateway/internal/adapter/http/rest/template"
 )
 
-func ClientRouterInit(enforcer *casbin.Enforcer, router *gin.RouterGroup, clientHandler client.ClientHandler, templateHandler template.TemplateHandler, messageHandler message.MessageHandler, log *zap.SugaredLogger) gin.IRoutes {
+func ClientRouterInit(enforcer *casbin.Enforcer, router *gin.RouterGroup, clientHandler client.Handler, templateHandler template.TemplateHandler, messageHandler message.Handler, log *zap.SugaredLogger) gin.IRoutes {
 
 	router.POST("/clients", clientHandler.AddClient)
 	router.POST("/clients/login", clientHandler.ClientLogin)

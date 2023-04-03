@@ -3,7 +3,6 @@ package user
 import (
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
 	"github.com/joomcode/errorx"
 	"golang.org/x/net/context"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"sms-gateway/internal/constant/rest/error_types"
 	userModule "sms-gateway/internal/module/user"
 	"time"
+	"github.com/go-playground/validator/v10"
 )
 
 type userHandler struct {
@@ -24,6 +24,7 @@ type userHandler struct {
 type UserHandler interface {
 	AddUser(c *gin.Context)
 	GetUser(c *gin.Context)
+	GetUserByParam(c *gin.Context)
 	UpdateUser(c *gin.Context)
 	GetAllUsers(c *gin.Context)
 }
@@ -117,4 +118,8 @@ func (u userHandler) GetAllUsers(c *gin.Context) {
 	}
 
 	rest.SuccessResponseJson(c, nil, &users, http.StatusOK)
+}
+
+func (uh userHandler) GetUserByParam(c *gin.Context) {
+
 }
